@@ -14,3 +14,4 @@ repos:
     hooks:
       - id: editorconfig-checker
         alias: ec
+        args: [-disable-indent-size]
