@@ -5,10 +5,9 @@ homeserver:
 
 db:
   engine: "postgres"
-  connectionString: "postgres://mjolnir-tester:mjolnir-test@localhost:8083/mjolnir-test-db"
+  connectionString: "postgres://mjolnir-tester:mjolnir-test@127.0.0.1:8083/mjolnir-test-db"
 
-accessControlList: "#access-control-list:localhost:9999"
-adminRoom: "#access-control-list:localhost:9999"
+adminRoom: "#draupnir-admin:localhost:9999"
 
 webAPI:
   port: 9001
