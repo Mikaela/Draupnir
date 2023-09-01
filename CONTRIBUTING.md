@@ -15,8 +15,7 @@ Apache-2.0.
 ## How to contribute
 
 The preferred and easiest way to contribute changes to Matrix is to fork the
-relevant project on github, and then [create a pull request](
-https://help.github.com/articles/using-pull-requests/) to ask us to pull
+relevant project on github, and then [create a pull request](https://help.github.com/articles/using-pull-requests/) to ask us to pull
 your changes into our repo.
 
 We use Github Actions for continuous integration.
@@ -116,8 +115,7 @@ makes it horribly hard to review otherwise.
 In order to have a concrete record that your contribution is intentional
 and you agree to license it under the same terms as the project's license, we've adopted the
 same lightweight approach that the Linux Kernel
-[submitting patches process](
-https://www.kernel.org/doc/html/latest/process/submitting-patches.html#sign-your-work-the-developer-s-certificate-of-origin>),
+[submitting patches process](https://www.kernel.org/doc/html/latest/process/submitting-patches.html#sign-your-work-the-developer-s-certificate-of-origin>),
 [Docker](https://github.com/docker/docker/blob/master/CONTRIBUTING.md), and many other
 projects use: the DCO (Developer Certificate of Origin:
 http://developercertificate.org/). This is a simple declaration that you wrote

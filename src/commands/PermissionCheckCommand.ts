@@ -28,6 +28,10 @@ limitations under the License.
 import { Mjolnir } from "../Mjolnir";
 
 // !mjolnir verify
-export async function execPermissionCheckCommand(roomId: string, event: any, mjolnir: Mjolnir) {
+export async function execPermissionCheckCommand(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+) {
     return mjolnir.protectedRoomsTracker.verifyPermissions(true, true);
 }

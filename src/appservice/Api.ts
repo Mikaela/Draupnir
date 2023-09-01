@@ -23,28 +23,37 @@ export class Api {
      * @param accessToken An openID token.
      * @returns The mxid of the user that this token belongs to or null if the token could not be authenticated.
      */
-    private resolveAccessToken(accessToken: string): Promise<string|null> {
+    private resolveAccessToken(accessToken: string): Promise<string | null> {
         return new Promise((resolve, reject) => {
-            request({
-                url: `${this.homeserver}/_matrix/federation/v1/openid/userinfo`,
-                qs: { access_token: accessToken },
-            }, (err, homeserver_response, body) => {
-                if (err) {
-                    log.error(`Error resolving openID token from ${this.homeserver}`, err);
-                    reject(null);
-                }
+            request(
+                {
+                    url: `${this.homeserver}/_matrix/federation/v1/openid/userinfo`,
+                    qs: { access_token: accessToken },
+                },
+                (err, homeserver_response, body) => {
+                    if (err) {
+                        log.error(
+                            `Error resolving openID token from ${this.homeserver}`,
+                            err,
+                        );
+                        reject(null);
+                    }
 
-                let response: { sub: string};
-                try {
-                    response = JSON.parse(body);
-                } catch (e) {
-                    log.error(`Received ill formed response from ${this.homeserver} when resolving an openID token`, e);
-                    reject(null);
-                    return;
-                }
+                    let response: { sub: string };
+                    try {
+                        response = JSON.parse(body);
+                    } catch (e) {
+                        log.error(
+                            `Received ill formed response from ${this.homeserver} when resolving an openID token`,
+                            e,
+                        );
+                        reject(null);
+                        return;
+                    }
 
-                resolve(response.sub);
-            });
+                    resolve(response.sub);
+                },
+            );
         });
     }
 
@@ -53,7 +62,9 @@ export class Api {
             if (!this.httpServer) {
                 throw new TypeError("Server was never started");
             }
-            this.httpServer.close(error => error ? reject(error) : resolve(undefined))
+            this.httpServer.close((error) =>
+                error ? reject(error) : resolve(undefined),
+            );
         });
     }
 
@@ -123,7 +134,7 @@ export class Api {
             return;
         }
 
-        const existing = this.mjolnirManager.getOwnedMjolnirs(userId)
+        const existing = this.mjolnirManager.getOwnedMjolnirs(userId);
         response.status(200).json(existing);
     }
 
@@ -154,7 +165,8 @@ export class Api {
 
         // TODO: provisionNewMjolnir will throw if it fails...
         // https://github.com/matrix-org/mjolnir/issues/408
-        const [mjolnirId, managementRoom] = await this.mjolnirManager.provisionNewMjolnir(userId);
+        const [mjolnirId, managementRoom] =
+            await this.mjolnirManager.provisionNewMjolnir(userId);
 
         response.status(200).json({ mxid: mjolnirId, roomId: managementRoom });
     }

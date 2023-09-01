@@ -35,33 +35,49 @@ import { ReadItem } from "./CommandReader";
 import { MatrixEmitter, MatrixSendClient } from "../../MatrixEmitter";
 import { BaseFunction, InterfaceCommand } from "./InterfaceCommand";
 import { tickCrossRenderer } from "./MatrixHelpRenderer";
-import { CommandInvocationRecord, InterfaceAcceptor, PromptableArgumentStream, PromptOptions } from "./PromptForAccept";
+import {
+    CommandInvocationRecord,
+    InterfaceAcceptor,
+    PromptableArgumentStream,
+    PromptOptions,
+} from "./PromptForAccept";
 import { ParameterDescription } from "./ParameterParsing";
 import { matrixPromptForAccept } from "./MatrixPromptForAccept";
 
 export interface MatrixContext {
-    client: MatrixSendClient,
-    emitter: MatrixEmitter,
-    roomId: string,
-    event: any,
+    client: MatrixSendClient;
+    emitter: MatrixEmitter;
+    roomId: string;
+    event: any;
 }
 
-type RendererSignature<C extends MatrixContext, ExecutorType extends BaseFunction> = (
+type RendererSignature<
+    C extends MatrixContext,
+    ExecutorType extends BaseFunction,
+> = (
     this: MatrixInterfaceAdaptor<C, ExecutorType>,
     client: MatrixClient,
     commandRoomId: string,
     event: any,
-    result: Awaited<ReturnType<ExecutorType>>) => Promise<void>;
+    result: Awaited<ReturnType<ExecutorType>>,
+) => Promise<void>;
 
-export class MatrixInterfaceAdaptor<C extends MatrixContext, ExecutorType extends BaseFunction = BaseFunction> implements InterfaceAcceptor {
+export class MatrixInterfaceAdaptor<
+    C extends MatrixContext,
+    ExecutorType extends BaseFunction = BaseFunction,
+> implements InterfaceAcceptor
+{
     public readonly isPromptable = true;
     constructor(
         public readonly interfaceCommand: InterfaceCommand<ExecutorType>,
         private readonly renderer: RendererSignature<C, ExecutorType>,
-        private readonly validationErrorHandler?: (client: MatrixClient, roomId: string, event: any, validationError: CommandError) => Promise<void>
-    ) {
-
-    }
+        private readonly validationErrorHandler?: (
+            client: MatrixClient,
+            roomId: string,
+            event: any,
+            validationError: CommandError,
+        ) => Promise<void>,
+    ) {}
 
     /**
      * Parse the context required by the command, call the associated application command and then render the result to a Matrix room.
@@ -71,17 +87,42 @@ export class MatrixInterfaceAdaptor<C extends MatrixContext, ExecutorType extend
      * along with the result of the executor.
      * @param args These will be the arguments to the parser function.
      */
-    public async invoke(executorContext: ThisParameterType<ExecutorType>, matrixContext: C, ...args: ReadItem[]): Promise<void> {
-        const invocationRecord = new MatrixInvocationRecord<ThisParameterType<ExecutorType>>(this.interfaceCommand, executorContext, matrixContext);
-        const stream = new PromptableArgumentStream(args, this, invocationRecord);
-        const executorResult: Awaited<ReturnType<typeof this.interfaceCommand.parseThenInvoke>> = await this.interfaceCommand.parseThenInvoke(executorContext, stream);
+    public async invoke(
+        executorContext: ThisParameterType<ExecutorType>,
+        matrixContext: C,
+        ...args: ReadItem[]
+    ): Promise<void> {
+        const invocationRecord = new MatrixInvocationRecord<
+            ThisParameterType<ExecutorType>
+        >(this.interfaceCommand, executorContext, matrixContext);
+        const stream = new PromptableArgumentStream(
+            args,
+            this,
+            invocationRecord,
+        );
+        const executorResult: Awaited<
+            ReturnType<typeof this.interfaceCommand.parseThenInvoke>
+        > = await this.interfaceCommand.parseThenInvoke(
+            executorContext,
+            stream,
+        );
         if (executorResult.isErr()) {
-            this.reportValidationError(matrixContext.client, matrixContext.roomId, matrixContext.event, executorResult.err);
+            this.reportValidationError(
+                matrixContext.client,
+                matrixContext.roomId,
+                matrixContext.event,
+                executorResult.err,
+            );
             return;
         }
         // just give the renderer the MatrixContext.
         // we need to give the renderer the command itself!
-        await this.renderer.apply(this, [matrixContext.client, matrixContext.roomId, matrixContext.event, executorResult]);
+        await this.renderer.apply(this, [
+            matrixContext.client,
+            matrixContext.roomId,
+            matrixContext.event,
+            executorResult,
+        ]);
     }
 
     // is this still necessary, surely this should be handled entirely by the renderer?
@@ -89,57 +130,103 @@ export class MatrixInterfaceAdaptor<C extends MatrixContext, ExecutorType extend
     // and an error discovered because their is a fault or an error running the command. Though i don't think this is correct
     // since any CommandError recieved is an expected error. It means there is no fault. An exception on the other hand does
     // so this suggests we should just remove this.
-    private async reportValidationError(client: MatrixSendClient, roomId: string, event: any, validationError: CommandError): Promise<void> {
-        LogService.info("MatrixInterfaceCommand", `User input validation error when parsing command ${JSON.stringify(this.interfaceCommand.designator)}: ${validationError.message}`);
+    private async reportValidationError(
+        client: MatrixSendClient,
+        roomId: string,
+        event: any,
+        validationError: CommandError,
+    ): Promise<void> {
+        LogService.info(
+            "MatrixInterfaceCommand",
+            `User input validation error when parsing command ${JSON.stringify(
+                this.interfaceCommand.designator,
+            )}: ${validationError.message}`,
+        );
         if (this.validationErrorHandler) {
             await this.validationErrorHandler.apply(this, arguments);
             return;
         }
-        await tickCrossRenderer.call(this, client, roomId, event, CommandResult.Err(validationError));
+        await tickCrossRenderer.call(
+            this,
+            client,
+            roomId,
+            event,
+            CommandResult.Err(validationError),
+        );
     }
 
-    public async promptForAccept<PresentationType = unknown>(parameter: ParameterDescription, invocationRecord: CommandInvocationRecord): Promise<CommandResult<PresentationType>> {
+    public async promptForAccept<PresentationType = unknown>(
+        parameter: ParameterDescription,
+        invocationRecord: CommandInvocationRecord,
+    ): Promise<CommandResult<PresentationType>> {
         if (!(invocationRecord instanceof MatrixInvocationRecord)) {
-            throw new TypeError("The MatrixInterfaceAdaptor only supports invocation records that were produced by itself.");
+            throw new TypeError(
+                "The MatrixInterfaceAdaptor only supports invocation records that were produced by itself.",
+            );
         }
         if (parameter.prompt === undefined) {
-            throw new TypeError(`parameter ${parameter.name} in command ${JSON.stringify(invocationRecord.command.designator)} is not promptable, yet the MatrixInterfaceAdaptor is being prompted`);
+            throw new TypeError(
+                `parameter ${parameter.name} in command ${JSON.stringify(
+                    invocationRecord.command.designator,
+                )} is not promptable, yet the MatrixInterfaceAdaptor is being prompted`,
+            );
         }
         // Slowly starting to think that we're making a mistake by using `this` so much....
         // First extract the prompt results in the command executor context
-        const promptOptions: PromptOptions = await parameter.prompt.call(invocationRecord.executorContext, parameter);
+        const promptOptions: PromptOptions = await parameter.prompt.call(
+            invocationRecord.executorContext,
+            parameter,
+        );
         // Then present the prompt.
-        const promptResult: Awaited<ReturnType<typeof matrixPromptForAccept<PresentationType>>> = await matrixPromptForAccept.call(invocationRecord.matrixContext, parameter, invocationRecord.command, promptOptions);
+        const promptResult: Awaited<
+            ReturnType<typeof matrixPromptForAccept<PresentationType>>
+        > = await matrixPromptForAccept.call(
+            invocationRecord.matrixContext,
+            parameter,
+            invocationRecord.command,
+            promptOptions,
+        );
         return promptResult;
     }
 }
 
-export class MatrixInvocationRecord<ExecutorContext> implements CommandInvocationRecord {
+export class MatrixInvocationRecord<ExecutorContext>
+    implements CommandInvocationRecord
+{
     constructor(
         public readonly command: InterfaceCommand<BaseFunction>,
         public readonly executorContext: ExecutorContext,
         public readonly matrixContext: MatrixContext,
-    ) {
-
-    }
+    ) {}
 }
 
+const MATRIX_INTERFACE_ADAPTORS = new Map<
+    InterfaceCommand<BaseFunction>,
+    MatrixInterfaceAdaptor<MatrixContext, BaseFunction>
+>();
 
-const MATRIX_INTERFACE_ADAPTORS = new Map<InterfaceCommand<BaseFunction>, MatrixInterfaceAdaptor<MatrixContext, BaseFunction>>();
-
-function internMatrixInterfaceAdaptor(interfaceCommand: InterfaceCommand<BaseFunction>, adapator: MatrixInterfaceAdaptor<MatrixContext, BaseFunction>): void {
+function internMatrixInterfaceAdaptor(
+    interfaceCommand: InterfaceCommand<BaseFunction>,
+    adapator: MatrixInterfaceAdaptor<MatrixContext, BaseFunction>,
+): void {
     if (MATRIX_INTERFACE_ADAPTORS.has(interfaceCommand)) {
-        throw new TypeError(`An adaptor is already defined for the command ${interfaceCommand.designator}`);
+        throw new TypeError(
+            `An adaptor is already defined for the command ${interfaceCommand.designator}`,
+        );
     }
     MATRIX_INTERFACE_ADAPTORS.set(interfaceCommand, adapator);
 }
 
-export function findMatrixInterfaceAdaptor(interfaceCommand: InterfaceCommand<BaseFunction>): MatrixInterfaceAdaptor<MatrixContext, BaseFunction> {
+export function findMatrixInterfaceAdaptor(
+    interfaceCommand: InterfaceCommand<BaseFunction>,
+): MatrixInterfaceAdaptor<MatrixContext, BaseFunction> {
     const entry = MATRIX_INTERFACE_ADAPTORS.get(interfaceCommand);
     if (entry) {
-        return entry
+        return entry;
     }
-    throw new TypeError(`Couldn't find an adaptor for the command ${interfaceCommand.designator}`);
+    throw new TypeError(
+        `Couldn't find an adaptor for the command ${interfaceCommand.designator}`,
+    );
 }
 
 /**
@@ -149,15 +236,14 @@ export function findMatrixInterfaceAdaptor(interfaceCommand: InterfaceCommand<Ba
  * @param applicationCommmand The ApplicationCommand this is an interface wrapper for.
  * @param renderer Render the result of the application command back to a room.
  */
-export function defineMatrixInterfaceAdaptor<ExecutorType extends (...args: any) => Promise<any>>(details: {
-        interfaceCommand: InterfaceCommand<ExecutorType>,
-        renderer: RendererSignature<MatrixContext, ExecutorType>
-    }) {
+export function defineMatrixInterfaceAdaptor<
+    ExecutorType extends (...args: any) => Promise<any>,
+>(details: {
+    interfaceCommand: InterfaceCommand<ExecutorType>;
+    renderer: RendererSignature<MatrixContext, ExecutorType>;
+}) {
     internMatrixInterfaceAdaptor(
         details.interfaceCommand,
-        new MatrixInterfaceAdaptor(
-            details.interfaceCommand,
-            details.renderer
-        )
+        new MatrixInterfaceAdaptor(details.interfaceCommand, details.renderer),
     );
 }

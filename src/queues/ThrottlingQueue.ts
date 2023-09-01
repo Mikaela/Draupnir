@@ -58,7 +58,10 @@ export class ThrottlingQueue {
      *
      * @param delayMS The default delay between executing two tasks, in ms.
      */
-    constructor(private mjolnir: Mjolnir, delayMS: number) {
+    constructor(
+        private mjolnir: Mjolnir,
+        delayMS: number,
+    ) {
         this.timeout = null;
         this.delayMS = delayMS;
         this._tasks = [];
@@ -95,7 +98,7 @@ export class ThrottlingQueue {
                     resolve(result);
                 } catch (ex) {
                     reject(ex);
-                };
+                }
             };
             this.tasks.push(wrapper);
             this.start();
@@ -113,7 +116,9 @@ export class ThrottlingQueue {
      */
     public block(durationMS: number) {
         if (!this.tasks) {
-            throw new TypeError("Cannot `block()` on a ThrottlingQueue that has already been disposed of.");
+            throw new TypeError(
+                "Cannot `block()` on a ThrottlingQueue that has already been disposed of.",
+            );
         }
         this.stop();
         this.timeout = setTimeout(async () => this.step(), durationMS);
@@ -158,7 +163,9 @@ export class ThrottlingQueue {
      */
     set delayMS(delayMS: number) {
         if (delayMS < 0) {
-            throw new TypeError(`Invalid delay ${delayMS}. Need a non-negative number of ms.`);
+            throw new TypeError(
+                `Invalid delay ${delayMS}. Need a non-negative number of ms.`,
+            );
         }
         this._delayMS = delayMS;
     }
@@ -191,8 +198,8 @@ export class ThrottlingQueue {
         } catch (ex) {
             await this.mjolnir.managementRoomOutput.logMessage(
                 LogLevel.WARN,
-                'Error while executing task',
-                ex
+                "Error while executing task",
+                ex,
             );
         } finally {
             this.stop();
@@ -205,7 +212,9 @@ export class ThrottlingQueue {
      */
     private get tasks(): (() => Promise<void>)[] {
         if (this._tasks === null) {
-            throw new TypeError("This Throttling Queue has been disposed of and shouldn't be used anymore");
+            throw new TypeError(
+                "This Throttling Queue has been disposed of and shouldn't be used anymore",
+            );
         }
         return this._tasks;
     }

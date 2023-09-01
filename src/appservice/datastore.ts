@@ -26,9 +26,9 @@ limitations under the License.
  */
 
 export interface MjolnirRecord {
-    local_part: string,
-    owner: string,
-    management_room: string,
+    local_part: string;
+    owner: string;
+    management_room: string;
 }
 
 /**

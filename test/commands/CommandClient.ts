@@ -12,11 +12,9 @@ export class MatrixInterfaceClient {
     constructor(
         private readonly client: MatrixSendClient,
         private readonly commandRoomId: string,
-    ) {
+    ) {}
 
-    }
-
-    public sendCommand
+    public sendCommand;
 }
 
 // so we have a few options

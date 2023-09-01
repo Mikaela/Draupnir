@@ -31,10 +31,19 @@ import { LogService, RichReply } from "matrix-bot-sdk";
 import { isListSetting } from "../protections/ProtectionSettings";
 
 // !mjolnir enable <protection>
-export async function execEnableProtection(roomId: string, event: any, mjolnir: Mjolnir, parts: string[]) {
+export async function execEnableProtection(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+    parts: string[],
+) {
     try {
         await mjolnir.protectionManager.enableProtection(parts[2]);
-        await mjolnir.client.unstableApis.addReactionToEvent(roomId, event['event_id'], '✅');
+        await mjolnir.client.unstableApis.addReactionToEvent(
+            roomId,
+            event["event_id"],
+            "✅",
+        );
     } catch (e) {
         LogService.error("ProtectionsCommands", e);
 
@@ -48,7 +57,7 @@ export async function execEnableProtection(roomId: string, event: any, mjolnir: 
 enum ConfigAction {
     Set,
     Add,
-    Remove
+    Remove,
 }
 
 /*
@@ -59,14 +68,18 @@ enum ConfigAction {
  * @param action Which ConfigAction to do to the provided protection setting
  * @returns Command success or failure message
  */
-async function _execConfigChangeProtection(mjolnir: Mjolnir, parts: string[], action: ConfigAction): Promise<string> {
+async function _execConfigChangeProtection(
+    mjolnir: Mjolnir,
+    parts: string[],
+    action: ConfigAction,
+): Promise<string> {
     const [protectionName, ...settingParts] = parts[0].split(".");
     const protection = mjolnir.protectionManager.getProtection(protectionName);
     if (!protection) {
         return `Unknown protection ${protectionName}`;
     }
 
-    const defaultSettings = protection.settings
+    const defaultSettings = protection.settings;
     const settingName = settingParts[0];
     const stringValue = parts[1];
 
@@ -94,7 +107,9 @@ async function _execConfigChangeProtection(mjolnir: Mjolnir, parts: string[], ac
     }
 
     try {
-        await mjolnir.protectionManager.setProtectionSettings(protectionName, { [settingName]: value });
+        await mjolnir.protectionManager.setProtectionSettings(protectionName, {
+            [settingName]: value,
+        });
     } catch (e) {
         return `Failed to set setting: ${e.message}`;
     }
@@ -110,8 +125,17 @@ async function _execConfigChangeProtection(mjolnir: Mjolnir, parts: string[], ac
  *
  * !mjolnir set <protection name>.<setting name> <value>
  */
-export async function execConfigSetProtection(roomId: string, event: any, mjolnir: Mjolnir, parts: string[]) {
-    const message = await _execConfigChangeProtection(mjolnir, parts, ConfigAction.Set);
+export async function execConfigSetProtection(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+    parts: string[],
+) {
+    const message = await _execConfigChangeProtection(
+        mjolnir,
+        parts,
+        ConfigAction.Set,
+    );
 
     const reply = RichReply.createFor(roomId, event, message, message);
     reply["msgtype"] = "m.notice";
@@ -123,8 +147,17 @@ export async function execConfigSetProtection(roomId: string, event: any, mjolni
  *
  * !mjolnir add <protection name>.<setting name> <value>
  */
-export async function execConfigAddProtection(roomId: string, event: any, mjolnir: Mjolnir, parts: string[]) {
-    const message = await _execConfigChangeProtection(mjolnir, parts, ConfigAction.Add);
+export async function execConfigAddProtection(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+    parts: string[],
+) {
+    const message = await _execConfigChangeProtection(
+        mjolnir,
+        parts,
+        ConfigAction.Add,
+    );
 
     const reply = RichReply.createFor(roomId, event, message, message);
     reply["msgtype"] = "m.notice";
@@ -136,8 +169,17 @@ export async function execConfigAddProtection(roomId: string, event: any, mjolni
  *
  * !mjolnir remove <protection name>.<setting name> <value>
  */
-export async function execConfigRemoveProtection(roomId: string, event: any, mjolnir: Mjolnir, parts: string[]) {
-    const message = await _execConfigChangeProtection(mjolnir, parts, ConfigAction.Remove);
+export async function execConfigRemoveProtection(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+    parts: string[],
+) {
+    const message = await _execConfigChangeProtection(
+        mjolnir,
+        parts,
+        ConfigAction.Remove,
+    );
 
     const reply = RichReply.createFor(roomId, event, message, message);
     reply["msgtype"] = "m.notice";
@@ -149,8 +191,15 @@ export async function execConfigRemoveProtection(roomId: string, event: any, mjo
  *
  * !mjolnir get [protection name]
  */
-export async function execConfigGetProtection(roomId: string, event: any, mjolnir: Mjolnir, parts: string[]) {
-    let pickProtections = Array.from(mjolnir.protectionManager.protections.keys());
+export async function execConfigGetProtection(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+    parts: string[],
+) {
+    let pickProtections = Array.from(
+        mjolnir.protectionManager.protections.keys(),
+    );
 
     if (parts.length === 0) {
         // no specific protectionName provided, show all of them.
@@ -174,7 +223,9 @@ export async function execConfigGetProtection(roomId: string, event: any, mjolni
     let anySettings = false;
 
     for (const protectionName of pickProtections) {
-        const protectionSettings = mjolnir.protectionManager.getProtection(protectionName)?.settings ?? {};
+        const protectionSettings =
+            mjolnir.protectionManager.getProtection(protectionName)?.settings ??
+            {};
 
         if (Object.keys(protectionSettings).length === 0) {
             continue;
@@ -191,14 +242,15 @@ export async function execConfigGetProtection(roomId: string, event: any, mjolni
             // `protectionName` and `settingName` are user-provided but
             // validated against the names of existing protections and their
             // settings, so XSS is avoided for these already
-            html += `<li><code>${protectionName}.${settingName}</code>: <code>${htmlEscape(value)}</code></li>`;
+            html += `<li><code>${protectionName}.${settingName}</code>: <code>${htmlEscape(
+                value,
+            )}</code></li>`;
         }
     }
 
     html += "</ul>";
 
-    if (!anySettings)
-        html = text = "No settings found";
+    if (!anySettings) html = text = "No settings found";
 
     const reply = RichReply.createFor(roomId, event, text, html);
     reply["msgtype"] = "m.notice";
@@ -206,20 +258,39 @@ export async function execConfigGetProtection(roomId: string, event: any, mjolni
 }
 
 // !mjolnir disable <protection>
-export async function execDisableProtection(roomId: string, event: any, mjolnir: Mjolnir, parts: string[]) {
+export async function execDisableProtection(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+    parts: string[],
+) {
     await mjolnir.protectionManager.disableProtection(parts[2]);
-    await mjolnir.client.unstableApis.addReactionToEvent(roomId, event['event_id'], '✅');
+    await mjolnir.client.unstableApis.addReactionToEvent(
+        roomId,
+        event["event_id"],
+        "✅",
+    );
 }
 
 // !mjolnir protections
-export async function execListProtections(roomId: string, event: any, mjolnir: Mjolnir, parts: string[]) {
-    const enabledProtections = mjolnir.protectionManager.enabledProtections.map(p => p.name);
+export async function execListProtections(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+    parts: string[],
+) {
+    const enabledProtections = mjolnir.protectionManager.enabledProtections.map(
+        (p) => p.name,
+    );
 
     let html = "Available protections:<ul>";
     let text = "Available protections:\n";
 
-    for (const [protectionName, protection] of mjolnir.protectionManager.protections) {
-        const emoji = enabledProtections.includes(protectionName) ? '🟢 (enabled)' : '🔴 (disabled)';
+    for (const [protectionName, protection] of mjolnir.protectionManager
+        .protections) {
+        const emoji = enabledProtections.includes(protectionName)
+            ? "🟢 (enabled)"
+            : "🔴 (disabled)";
         html += `<li>${emoji} <code>${protectionName}</code> - ${protection.description}</li>`;
         text += `* ${emoji} ${protectionName} - ${protection.description}\n`;
     }

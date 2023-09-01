@@ -25,8 +25,15 @@ limitations under the License.
  * are NOT distributed, contributed, committed, or licensed under the Apache License.
  */
 
-import { defineInterfaceCommand, findTableCommand } from "./interface-manager/InterfaceCommand";
-import { findPresentationType, parameters, ParsedKeywords } from "./interface-manager/ParameterParsing";
+import {
+    defineInterfaceCommand,
+    findTableCommand,
+} from "./interface-manager/InterfaceCommand";
+import {
+    findPresentationType,
+    parameters,
+    ParsedKeywords,
+} from "./interface-manager/ParameterParsing";
 import { MjolnirContext } from "./CommandHandler";
 import { MatrixRoomReference } from "./interface-manager/MatrixRoomReference";
 import { CommandError, CommandResult } from "./interface-manager/Validation";
@@ -36,41 +43,51 @@ import { defineMatrixInterfaceAdaptor } from "./interface-manager/MatrixInterfac
 defineInterfaceCommand({
     table: "mjolnir",
     designator: ["watch"],
-    summary: "Watches a list and applies the list's assocated policies to draupnir's protected rooms.",
+    summary:
+        "Watches a list and applies the list's assocated policies to draupnir's protected rooms.",
     parameters: parameters([
         {
-            name: 'list',
+            name: "list",
             acceptor: findPresentationType("MatrixRoomReference"),
-        }
+        },
     ]),
-    command: async function (this: MjolnirContext, _keywords: ParsedKeywords, list: MatrixRoomReference): Promise<CommandResult<void, CommandError>> {
+    command: async function (
+        this: MjolnirContext,
+        _keywords: ParsedKeywords,
+        list: MatrixRoomReference,
+    ): Promise<CommandResult<void, CommandError>> {
         await this.mjolnir.policyListManager.watchList(list);
         return CommandResult.Ok(undefined);
     },
-})
+});
 
 defineMatrixInterfaceAdaptor({
     interfaceCommand: findTableCommand("mjolnir", "watch"),
     renderer: tickCrossRenderer,
-})
+});
 
 defineInterfaceCommand({
     table: "mjolnir",
     designator: ["unwatch"],
-    summary: "Unwatches a list and stops applying the list's assocated policies to draupnir's protected rooms.",
+    summary:
+        "Unwatches a list and stops applying the list's assocated policies to draupnir's protected rooms.",
     parameters: parameters([
         {
-            name: 'list',
+            name: "list",
             acceptor: findPresentationType("MatrixRoomReference"),
-        }
+        },
     ]),
-    command: async function (this: MjolnirContext, _keywords: ParsedKeywords, list: MatrixRoomReference): Promise<CommandResult<void, CommandError>> {
+    command: async function (
+        this: MjolnirContext,
+        _keywords: ParsedKeywords,
+        list: MatrixRoomReference,
+    ): Promise<CommandResult<void, CommandError>> {
         await this.mjolnir.policyListManager.unwatchList(list);
         return CommandResult.Ok(undefined);
     },
-})
+});
 
 defineMatrixInterfaceAdaptor({
     interfaceCommand: findTableCommand("mjolnir", "unwatch"),
     renderer: tickCrossRenderer,
-})
+});

@@ -29,7 +29,13 @@ limitations under the License.
  * I'd like to remove the dependency on matrix-bot-sdk.
  */
 
-import { ParameterParser, IArgumentStream, IArgumentListParser, ParsedKeywords, ArgumentStream } from "./ParameterParsing";
+import {
+    ParameterParser,
+    IArgumentStream,
+    IArgumentListParser,
+    ParsedKeywords,
+    ArgumentStream,
+} from "./ParameterParsing";
 import { CommandResult } from "./Validation";
 
 /**
@@ -38,30 +44,36 @@ import { CommandResult } from "./Validation";
  * Probably am "doing something wrong", and no, trying to make this protocol isn't it.
  */
 
-export type BaseFunction = (keywords: ParsedKeywords, ...args: any) => Promise<CommandResult<any>>;
+export type BaseFunction = (
+    keywords: ParsedKeywords,
+    ...args: any
+) => Promise<CommandResult<any>>;
 
 type CommandLookupEntry<ExecutorType extends BaseFunction> = {
-    next?: Map<string, CommandLookupEntry<ExecutorType>>,
-    current?: InterfaceCommand<ExecutorType>
+    next?: Map<string, CommandLookupEntry<ExecutorType>>;
+    current?: InterfaceCommand<ExecutorType>;
 };
 
 export class CommandTable<ExecutorType extends BaseFunction = BaseFunction> {
-    private readonly flattenedCommands = new Set<InterfaceCommand<BaseFunction>>();
-    private readonly commands: CommandLookupEntry<ExecutorType> = { };
+    private readonly flattenedCommands = new Set<
+        InterfaceCommand<BaseFunction>
+    >();
+    private readonly commands: CommandLookupEntry<ExecutorType> = {};
     /** Imported tables are tables that "add commands" to this table. They are not sub commands. */
     private readonly importedTables = new Set<CommandTable>();
 
-    constructor(public readonly name: string|symbol) {
-
-    }
+    constructor(public readonly name: string | symbol) {}
 
     /**
      * Used to render the help command.
      * @returns All of the commands in this table.
      */
     public getAllCommands(): InterfaceCommand[] {
-        const importedCommands = [...this.importedTables].reduce((acc, t) => [...acc, ...t.getAllCommands()], []);
-        return [...this.getExportedCommands(), ...importedCommands]
+        const importedCommands = [...this.importedTables].reduce(
+            (acc, t) => [...acc, ...t.getAllCommands()],
+            [],
+        );
+        return [...this.getExportedCommands(), ...importedCommands];
     }
 
     /**
@@ -77,8 +89,14 @@ export class CommandTable<ExecutorType extends BaseFunction = BaseFunction> {
 
     // We use the argument stream so that they can use stream.rest() to get the unconsumed arguments.
     public findAnExportedMatchingCommand(stream: IArgumentStream) {
-        const tableHelper = (table: CommandLookupEntry<ExecutorType>, argumentStream: IArgumentStream): undefined|InterfaceCommand<ExecutorType> => {
-            if (argumentStream.peekItem() === undefined || typeof argumentStream.peekItem() !== 'string') {
+        const tableHelper = (
+            table: CommandLookupEntry<ExecutorType>,
+            argumentStream: IArgumentStream,
+        ): undefined | InterfaceCommand<ExecutorType> => {
+            if (
+                argumentStream.peekItem() === undefined ||
+                typeof argumentStream.peekItem() !== "string"
+            ) {
                 // Then they might be using something like "!mjolnir status"
                 return table.current;
             }
@@ -93,19 +111,22 @@ export class CommandTable<ExecutorType extends BaseFunction = BaseFunction> {
         return tableHelper(this.commands, stream);
     }
 
-    public findAMatchingCommand(stream: IArgumentStream): InterfaceCommand|undefined {
+    public findAMatchingCommand(
+        stream: IArgumentStream,
+    ): InterfaceCommand | undefined {
         const possibleExportedCommand = stream.savingPositionIf({
             body: (s: IArgumentStream) => this.findAnExportedMatchingCommand(s),
-            predicate: command => command === undefined,
+            predicate: (command) => command === undefined,
         });
         if (possibleExportedCommand) {
             return possibleExportedCommand;
         }
         for (const table of this.importedTables.values()) {
-            const possibleCommand: InterfaceCommand|undefined = stream.savingPositionIf<InterfaceCommand|undefined>({
-                body: (s: IArgumentStream) => table.findAMatchingCommand(s),
-                predicate: command => command === undefined,
-            });
+            const possibleCommand: InterfaceCommand | undefined =
+                stream.savingPositionIf<InterfaceCommand | undefined>({
+                    body: (s: IArgumentStream) => table.findAMatchingCommand(s),
+                    predicate: (command) => command === undefined,
+                });
             if (possibleCommand) {
                 return possibleCommand;
             }
@@ -114,10 +135,17 @@ export class CommandTable<ExecutorType extends BaseFunction = BaseFunction> {
     }
 
     public internCommand(command: InterfaceCommand<ExecutorType>) {
-        const internCommandHelper = (table: CommandLookupEntry<ExecutorType>, designator: string[]): void => {
+        const internCommandHelper = (
+            table: CommandLookupEntry<ExecutorType>,
+            designator: string[],
+        ): void => {
             if (designator.length === 0) {
                 if (table.current) {
-                    throw new TypeError(`There is already a command for ${JSON.stringify(designator)}`)
+                    throw new TypeError(
+                        `There is already a command for ${JSON.stringify(
+                            designator,
+                        )}`,
+                    );
                 }
                 table.current = command;
                 this.flattenedCommands.add(command);
@@ -126,27 +154,41 @@ export class CommandTable<ExecutorType extends BaseFunction = BaseFunction> {
                     table.next = new Map();
                 }
                 const currentDesignator = designator.shift()!;
-                const nextLookupEntry = table.next.get(currentDesignator)
-                    ?? ((lookup: CommandLookupEntry<ExecutorType>) => (table.next?.set(currentDesignator, lookup), lookup))({});
+                const nextLookupEntry =
+                    table.next.get(currentDesignator) ??
+                    ((lookup: CommandLookupEntry<ExecutorType>) => (
+                        table.next?.set(currentDesignator, lookup), lookup
+                    ))({});
                 internCommandHelper(nextLookupEntry, designator);
             }
-        }
+        };
 
         internCommandHelper(this.commands, [...command.designator]);
     }
 
     public importTable(table: CommandTable): void {
         for (const command of table.getAllCommands()) {
-            if (this.findAMatchingCommand(new ArgumentStream(command.designator))) {
-                throw new TypeError(`Command ${JSON.stringify(command.designator)} is in conflict with this table and cannot be imported.`);
+            if (
+                this.findAMatchingCommand(
+                    new ArgumentStream(command.designator),
+                )
+            ) {
+                throw new TypeError(
+                    `Command ${JSON.stringify(
+                        command.designator,
+                    )} is in conflict with this table and cannot be imported.`,
+                );
             }
         }
         this.importedTables.add(table);
     }
 }
 
-const COMMAND_TABLE_TABLE = new Map<string|symbol, CommandTable<BaseFunction>>();
-export function defineCommandTable(name: string|symbol): CommandTable {
+const COMMAND_TABLE_TABLE = new Map<
+    string | symbol,
+    CommandTable<BaseFunction>
+>();
+export function defineCommandTable(name: string | symbol): CommandTable {
     if (COMMAND_TABLE_TABLE.has(name)) {
         throw new TypeError(`A table called ${name.toString()} already exists`);
     }
@@ -155,7 +197,9 @@ export function defineCommandTable(name: string|symbol): CommandTable {
     return table;
 }
 
-export function findCommandTable<ExecutorType extends BaseFunction>(name: string|symbol): CommandTable<ExecutorType> {
+export function findCommandTable<ExecutorType extends BaseFunction>(
+    name: string | symbol,
+): CommandTable<ExecutorType> {
     const entry = COMMAND_TABLE_TABLE.get(name);
     if (!entry) {
         throw new TypeError(`Couldn't find a table called ${name.toString()}`);
@@ -166,16 +210,28 @@ export function findCommandTable<ExecutorType extends BaseFunction>(name: string
 /**
  * Used to find a table command at the internal DSL level, not as a client for commands.
  */
-export function findTableCommand<ExecutorType extends BaseFunction>(tableName: string|symbol, ...designator: string[]): InterfaceCommand<ExecutorType> {
+export function findTableCommand<ExecutorType extends BaseFunction>(
+    tableName: string | symbol,
+    ...designator: string[]
+): InterfaceCommand<ExecutorType> {
     const table = findCommandTable(tableName);
     const command = table.findAMatchingCommand(new ArgumentStream(designator));
-    if (command === undefined || !designator.every(part => command.designator.includes(part))) {
-        throw new TypeError(`Could not find a table command in the table ${tableName.toString()} with the designator ${JSON.stringify(designator)}`)
+    if (
+        command === undefined ||
+        !designator.every((part) => command.designator.includes(part))
+    ) {
+        throw new TypeError(
+            `Could not find a table command in the table ${tableName.toString()} with the designator ${JSON.stringify(
+                designator,
+            )}`,
+        );
     }
     return command as InterfaceCommand<ExecutorType>;
 }
 
-export class InterfaceCommand<ExecutorType extends BaseFunction = BaseFunction> {
+export class InterfaceCommand<
+    ExecutorType extends BaseFunction = BaseFunction,
+> {
     constructor(
         public readonly argumentListParser: IArgumentListParser,
         private readonly command: ExecutorType,
@@ -184,21 +240,28 @@ export class InterfaceCommand<ExecutorType extends BaseFunction = BaseFunction> 
         public readonly summary: string,
         /** A longer description that goes into detail. */
         public readonly description?: string,
-    ) {
-    }
+    ) {}
 
     // Really, surely this should be part of invoke?
     // probably... it's just that means that invoke has to return the validation result lol.
     // Though this makes no sense if parsing is part of finding a matching command.
-    public async parseArguments(stream: IArgumentStream): ReturnType<ParameterParser> {
+    public async parseArguments(
+        stream: IArgumentStream,
+    ): ReturnType<ParameterParser> {
         return await this.argumentListParser.parse(stream);
     }
 
-    public invoke(context: ThisParameterType<ExecutorType>, ...args: Parameters<ExecutorType>): ReturnType<ExecutorType> {
+    public invoke(
+        context: ThisParameterType<ExecutorType>,
+        ...args: Parameters<ExecutorType>
+    ): ReturnType<ExecutorType> {
         return this.command.apply(context, args);
     }
 
-    public async parseThenInvoke(context: ThisParameterType<ExecutorType>, stream: IArgumentStream): Promise<ReturnType<ExecutorType>> {
+    public async parseThenInvoke(
+        context: ThisParameterType<ExecutorType>,
+        stream: IArgumentStream,
+    ): Promise<ReturnType<ExecutorType>> {
         const parameterDescription = await this.parseArguments(stream);
         if (parameterDescription.isErr()) {
             // The inner type is irrelevant when it is Err, i don't know how to encode this in TS's type system but whatever.
@@ -207,7 +270,7 @@ export class InterfaceCommand<ExecutorType extends BaseFunction = BaseFunction> 
         return await this.command.apply(context, [
             parameterDescription.ok.keywords,
             ...parameterDescription.ok.immediateArguments,
-            ...parameterDescription.ok.rest ?? []
+            ...(parameterDescription.ok.rest ?? []),
         ]);
     }
 }
@@ -218,13 +281,15 @@ export class InterfaceCommand<ExecutorType extends BaseFunction = BaseFunction> 
 // has been cleared or there was an error applying a ban to that room.
 // There could be a description in defineInterfaceComomand
 // for what each callback is and does for the adaptors to hook into.
-export function defineInterfaceCommand<ExecutorType extends BaseFunction>(description: {
-    parameters: IArgumentListParser,
-    table: string|symbol,
-    command: ExecutorType,
-    designator: string[],
-    summary: string,
-    description?: string,
+export function defineInterfaceCommand<
+    ExecutorType extends BaseFunction,
+>(description: {
+    parameters: IArgumentListParser;
+    table: string | symbol;
+    command: ExecutorType;
+    designator: string[];
+    summary: string;
+    description?: string;
 }) {
     const command = new InterfaceCommand<ExecutorType>(
         description.parameters,

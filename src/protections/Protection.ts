@@ -37,31 +37,44 @@ import { ReadItem } from "../commands/interface-manager/CommandReader";
  * Protections are guaranteed to be run before redaction handlers.
  */
 export abstract class Protection {
-    abstract readonly name: string
+    abstract readonly name: string;
     abstract readonly description: string;
     enabled = false;
     readonly requiredStatePermissions: string[] = [];
-    abstract settings: { [setting: string]: AbstractProtectionSetting<any, any> };
+    abstract settings: {
+        [setting: string]: AbstractProtectionSetting<any, any>;
+    };
 
     /*
      * Handle a single event from a protected room, to decide if we need to
      * respond to it
      */
-    async handleEvent(mjolnir: Mjolnir, roomId: string, event: any): Promise<Consequence[] | any> {
-    }
+    async handleEvent(
+        mjolnir: Mjolnir,
+        roomId: string,
+        event: any,
+    ): Promise<Consequence[] | any> {}
 
     /*
      * Handle a single reported event from a protecte room, to decide if we
      * need to respond to it
      */
-    async handleReport(mjolnir: Mjolnir, roomId: string, reporterId: string, event: any, reason?: string): Promise<any> {
-    }
+    async handleReport(
+        mjolnir: Mjolnir,
+        roomId: string,
+        reporterId: string,
+        event: any,
+        reason?: string,
+    ): Promise<any> {}
 
     /**
      * Return status information for `!mjolnir status ${protectionName}`.
      * FIXME: protections need their own tables https://github.com/Gnuxie/Draupnir/issues/21
      */
-    async statusCommand(mjolnir: Mjolnir, subcommand: ReadItem[]): Promise<{html: string, text: string} | null> {
+    async statusCommand(
+        mjolnir: Mjolnir,
+        subcommand: ReadItem[],
+    ): Promise<{ html: string; text: string } | null> {
         // By default, protections don't have any status to show.
         return null;
     }

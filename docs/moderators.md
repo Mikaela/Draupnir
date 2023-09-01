@@ -10,17 +10,17 @@ information about the Synapse module can be found in the README.
 
 If you're actively dealing with an incident, here's what you need to know:
 
-* Always talk to Draupnir in your coordination room.
-* `!draupnir rooms add <room>` will add a room to your "protected rooms", rooms where draupnir will propagate bans.
-* `!draupnir ban @spammer:example.org [list] [reason]` will ban someone.
-* `!draupnir ban example.org` will ban a whole server.
-* `!draupnir rules` will tell you what the shortcodes are for your ban lists (needed above).
-* `!draupnir redact @spammer:example.org #room:example.org` will redact someone's posts in a specific room.
-* `!draupnir redact @spammer:example.org` will redact someone's posts in all rooms Draupnir protects.
-* `!draupnir protections` will show you your available protections - green circles mean enabled.
-* `!draupnir enable <protection>` to turn on a protection.
-* `!draupnir move <room alias> <room alias/ID>` Moves a room alias to a new room ID
-* `!draupnir verify` makes sure the bot has all required permissions to enact moderation (in all the protected rooms).
+- Always talk to Draupnir in your coordination room.
+- `!draupnir rooms add <room>` will add a room to your "protected rooms", rooms where draupnir will propagate bans.
+- `!draupnir ban @spammer:example.org [list] [reason]` will ban someone.
+- `!draupnir ban example.org` will ban a whole server.
+- `!draupnir rules` will tell you what the shortcodes are for your ban lists (needed above).
+- `!draupnir redact @spammer:example.org #room:example.org` will redact someone's posts in a specific room.
+- `!draupnir redact @spammer:example.org` will redact someone's posts in all rooms Draupnir protects.
+- `!draupnir protections` will show you your available protections - green circles mean enabled.
+- `!draupnir enable <protection>` to turn on a protection.
+- `!draupnir move <room alias> <room alias/ID>` Moves a room alias to a new room ID
+- `!draupnir verify` makes sure the bot has all required permissions to enact moderation (in all the protected rooms).
 
 ## How Draupnir works
 
@@ -103,11 +103,12 @@ amounts of reports from trusted users on an given message, it will take an actio
 The users to trust, the actions to take, and the thresholds needed for those actions are configurable.
 
 Prerequisites:
-* `pollReport: true` in Draupnir config file
-* restart Draupnir
-* `!draupnir enable TrustedReporters`
-* `!draupnir config add TrustedReporters.mxids @trusteduser:example.com`
-* `!draupnir config set TrustedReporters.alertThreshold 3`
+
+- `pollReport: true` in Draupnir config file
+- restart Draupnir
+- `!draupnir enable TrustedReporters`
+- `!draupnir config add TrustedReporters.mxids @trusteduser:example.com`
+- `!draupnir config set TrustedReporters.alertThreshold 3`
 
 TrustedReporters supports 3 different thresholds; `alertThreshold`, `redactThreshold`, and `banThreshold`.
 By default, only `alertThreshold` is enabled, and is set to `3`. Draupnir will only consider reports that

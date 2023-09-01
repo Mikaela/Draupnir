@@ -26,8 +26,15 @@ limitations under the License.
  */
 
 import { UserID } from "matrix-bot-sdk";
-import { defineInterfaceCommand, findTableCommand } from "./interface-manager/InterfaceCommand";
-import { findPresentationType, parameters, ParsedKeywords } from "./interface-manager/ParameterParsing";
+import {
+    defineInterfaceCommand,
+    findTableCommand,
+} from "./interface-manager/InterfaceCommand";
+import {
+    findPresentationType,
+    parameters,
+    ParsedKeywords,
+} from "./interface-manager/ParameterParsing";
 import { MjolnirContext } from "./CommandHandler";
 import { tickCrossRenderer } from "./interface-manager/MatrixHelpRenderer";
 import { defineMatrixInterfaceAdaptor } from "./interface-manager/MatrixInterfaceAdaptor";
@@ -36,24 +43,31 @@ import { CommandResult, CommandError } from "./interface-manager/Validation";
 defineInterfaceCommand({
     table: "synapse admin",
     designator: ["deactivate"],
-    summary: "Deactivates the user on the homeserver, preventing use of the account.",
+    summary:
+        "Deactivates the user on the homeserver, preventing use of the account.",
     parameters: parameters([
         {
-            name: 'user',
+            name: "user",
             acceptor: findPresentationType("UserID"),
-        }
+        },
     ]),
-    command: async function (this: MjolnirContext, _keywords: ParsedKeywords, targetUser: UserID): Promise<CommandResult<void, CommandError>> {
+    command: async function (
+        this: MjolnirContext,
+        _keywords: ParsedKeywords,
+        targetUser: UserID,
+    ): Promise<CommandResult<void, CommandError>> {
         const isAdmin = await this.mjolnir.isSynapseAdmin();
         if (!isAdmin) {
-            return CommandError.Result('I am not a Synapse administrator, or the endpoint to deactivate a user is blocked');
+            return CommandError.Result(
+                "I am not a Synapse administrator, or the endpoint to deactivate a user is blocked",
+            );
         }
         await this.mjolnir.deactivateSynapseUser(targetUser.toString());
         return CommandResult.Ok(undefined);
     },
-})
+});
 
 defineMatrixInterfaceAdaptor({
     interfaceCommand: findTableCommand("synapse admin", "deactivate"),
     renderer: tickCrossRenderer,
-})
+});

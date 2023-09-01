@@ -1,5 +1,12 @@
 import { Mjolnir } from "../Mjolnir";
-import { Request, WeakEvent, BridgeContext, Bridge, Intent, Logger } from "matrix-appservice-bridge";
+import {
+    Request,
+    WeakEvent,
+    BridgeContext,
+    Bridge,
+    Intent,
+    Logger,
+} from "matrix-appservice-bridge";
 import { getProvisionedMjolnirConfig } from "../config";
 import PolicyList from "../models/PolicyList";
 import { MatrixClient, UserID } from "matrix-bot-sdk";
@@ -12,7 +19,7 @@ import { MatrixEmitter } from "../MatrixEmitter";
 import { Permalinks } from "../commands/interface-manager/Permalinks";
 import { MatrixRoomReference } from "../commands/interface-manager/MatrixRoomReference";
 
-const log = new Logger('MjolnirManager');
+const log = new Logger("MjolnirManager");
 
 // FIXME: AAAAAAAAaaaaaaaaaaaaa there's some inconsistency between "mjolnir id" "mjolnirRecord.localpart" and "user if of the mjolnir"
 //        all over this file.
@@ -24,16 +31,20 @@ const log = new Logger('MjolnirManager');
  * * Informing mjolnirs about new events.
  */
 export class MjolnirManager {
-    private readonly mjolnirs: Map</*the user id of the mjolnir*/string, ManagedMjolnir> = new Map();
-    private readonly unstartedMjolnirs: Map</** user id of the mjolnir */string, UnstartedMjolnir> = new Map();
+    private readonly mjolnirs: Map<
+        /*the user id of the mjolnir*/ string,
+        ManagedMjolnir
+    > = new Map();
+    private readonly unstartedMjolnirs: Map<
+        /** user id of the mjolnir */ string,
+        UnstartedMjolnir
+    > = new Map();
 
     private constructor(
         private readonly dataStore: DataStore,
         private readonly bridge: Bridge,
-        private readonly accessControl: AccessControl
-    ) {
-
-    }
+        private readonly accessControl: AccessControl,
+    ) {}
 
     /**
      * Create the mjolnir manager from the datastore and the access control.
@@ -42,8 +53,16 @@ export class MjolnirManager {
      * @param accessControl Who has access to the bridge.
      * @returns A new mjolnir manager.
      */
-    public static async makeMjolnirManager(dataStore: DataStore, bridge: Bridge, accessControl: AccessControl): Promise<MjolnirManager> {
-        const mjolnirManager = new MjolnirManager(dataStore, bridge, accessControl);
+    public static async makeMjolnirManager(
+        dataStore: DataStore,
+        bridge: Bridge,
+        accessControl: AccessControl,
+    ): Promise<MjolnirManager> {
+        const mjolnirManager = new MjolnirManager(
+            dataStore,
+            bridge,
+            accessControl,
+        );
         await mjolnirManager.startMjolnirs(await dataStore.list());
         return mjolnirManager;
     }
@@ -55,7 +74,11 @@ export class MjolnirManager {
      * @param client A client for the appservice virtual user that the new mjolnir should use.
      * @returns A new managed mjolnir.
      */
-    public async makeInstance(requestingUserId: string, managementRoomId: string, client: MatrixClient): Promise<ManagedMjolnir> {
+    public async makeInstance(
+        requestingUserId: string,
+        managementRoomId: string,
+        client: MatrixClient,
+    ): Promise<ManagedMjolnir> {
         const mxid = await client.getUserId();
         const intentListener = new MatrixIntentListener(mxid);
         const managedMjolnir = new ManagedMjolnir(
@@ -63,7 +86,7 @@ export class MjolnirManager {
             await Mjolnir.setupMjolnirFromConfig(
                 client,
                 intentListener,
-                getProvisionedMjolnirConfig(managementRoomId)
+                getProvisionedMjolnirConfig(managementRoomId),
             ),
             intentListener,
         );
@@ -79,11 +102,16 @@ export class MjolnirManager {
      * @param ownerId The owner of the mjolnir. We ask for it explicitly to not leak access to another user's mjolnir.
      * @returns The matching managed mjolnir instance.
      */
-    public getMjolnir(mjolnirId: string, ownerId: string): ManagedMjolnir|undefined {
+    public getMjolnir(
+        mjolnirId: string,
+        ownerId: string,
+    ): ManagedMjolnir | undefined {
         const mjolnir = this.mjolnirs.get(mjolnirId);
         if (mjolnir) {
             if (mjolnir.ownerId !== ownerId) {
-                throw new Error(`${mjolnirId} is owned by a different user to ${ownerId}`);
+                throw new Error(
+                    `${mjolnirId} is owned by a different user to ${ownerId}`,
+                );
             } else {
                 return mjolnir;
             }
@@ -101,7 +129,9 @@ export class MjolnirManager {
         // TODO we need to use the database for this but also provide the utility
         // for going from a MjolnirRecord to a ManagedMjolnir.
         // https://github.com/matrix-org/mjolnir/issues/409
-        return [...this.mjolnirs.values()].filter(mjolnir => mjolnir.ownerId !== ownerId);
+        return [...this.mjolnirs.values()].filter(
+            (mjolnir) => mjolnir.ownerId !== ownerId,
+        );
     }
 
     /**
@@ -110,7 +140,9 @@ export class MjolnirManager {
     public onEvent(request: Request<WeakEvent>, context: BridgeContext) {
         // TODO We need a way to map a room id (that the event is from) to a set of managed mjolnirs that should be informed.
         // https://github.com/matrix-org/mjolnir/issues/412
-        [...this.mjolnirs.values()].forEach((mj: ManagedMjolnir) => mj.onEvent(request));
+        [...this.mjolnirs.values()].forEach((mj: ManagedMjolnir) =>
+            mj.onEvent(request),
+        );
     }
 
     /**
@@ -118,30 +150,41 @@ export class MjolnirManager {
      * @param requestingUserId The mxid of the user we are creating a mjolnir for.
      * @returns The matrix id of the new mjolnir and its management room.
      */
-    public async provisionNewMjolnir(requestingUserId: string): Promise<[string, string]> {
+    public async provisionNewMjolnir(
+        requestingUserId: string,
+    ): Promise<[string, string]> {
         const access = this.accessControl.getUserAccess(requestingUserId);
         if (access.outcome !== Access.Allowed) {
-            throw new Error(`${requestingUserId} tried to provision a mjolnir when they do not have access ${access.outcome} ${access.rule?.reason ?? 'no reason specified'}`);
+            throw new Error(
+                `${requestingUserId} tried to provision a mjolnir when they do not have access ${
+                    access.outcome
+                } ${access.rule?.reason ?? "no reason specified"}`,
+            );
         }
-        const provisionedMjolnirs = await this.dataStore.lookupByOwner(requestingUserId);
+        const provisionedMjolnirs =
+            await this.dataStore.lookupByOwner(requestingUserId);
         if (provisionedMjolnirs.length === 0) {
             const mjolnirLocalPart = `mjolnir_${randomUUID()}`;
             const mjIntent = await this.makeMatrixIntent(mjolnirLocalPart);
 
             const managementRoomId = await mjIntent.matrixClient.createRoom({
-                preset: 'private_chat',
+                preset: "private_chat",
                 invite: [requestingUserId],
                 name: `${requestingUserId}'s mjolnir`,
                 power_level_content_override: {
                     users: {
                         [requestingUserId]: 100,
                         // Give the mjolnir a higher PL so that can avoid issues with managing the management room.
-                        [await mjIntent.matrixClient.getUserId()]: 101
-                    }
-                }
+                        [await mjIntent.matrixClient.getUserId()]: 101,
+                    },
+                },
             });
 
-            const mjolnir = await this.makeInstance(requestingUserId, managementRoomId, mjIntent.matrixClient);
+            const mjolnir = await this.makeInstance(
+                requestingUserId,
+                managementRoomId,
+                mjIntent.matrixClient,
+            );
             await mjolnir.createFirstList(requestingUserId, "list");
 
             await this.dataStore.store({
@@ -152,20 +195,34 @@ export class MjolnirManager {
 
             return [mjIntent.userId, managementRoomId];
         } else {
-            throw new Error(`User: ${requestingUserId} has already provisioned ${provisionedMjolnirs.length} mjolnirs.`);
+            throw new Error(
+                `User: ${requestingUserId} has already provisioned ${provisionedMjolnirs.length} mjolnirs.`,
+            );
         }
     }
 
-    public reportUnstartedMjolnir(code: UnstartedMjolnir.FailCode, cause: any, mjolnirRecord: MjolnirRecord, mxid: string): void {
-        this.unstartedMjolnirs.set(mjolnirRecord.local_part, new UnstartedMjolnir(mjolnirRecord, new UserID(mxid), code, cause));
+    public reportUnstartedMjolnir(
+        code: UnstartedMjolnir.FailCode,
+        cause: any,
+        mjolnirRecord: MjolnirRecord,
+        mxid: string,
+    ): void {
+        this.unstartedMjolnirs.set(
+            mjolnirRecord.local_part,
+            new UnstartedMjolnir(mjolnirRecord, new UserID(mxid), code, cause),
+        );
     }
 
     public getUnstartedMjolnirs(): UnstartedMjolnir[] {
         return [...this.unstartedMjolnirs.values()];
     }
 
-    public findUnstartedMjolnir(localPart: string): UnstartedMjolnir|undefined {
-        return [...this.unstartedMjolnirs.values()].find(unstarted => unstarted.mjolnirRecord.local_part === localPart);
+    public findUnstartedMjolnir(
+        localPart: string,
+    ): UnstartedMjolnir | undefined {
+        return [...this.unstartedMjolnirs.values()].find(
+            (unstarted) => unstarted.mjolnirRecord.local_part === localPart,
+        );
     }
 
     /**
@@ -187,24 +244,47 @@ export class MjolnirManager {
     public async startMjolnir(mjolnirRecord: MjolnirRecord): Promise<void> {
         // if a mjolnir is in `this.mjonirs` it is started, as if it is present, it is going to be given Matrix events.
         if (this.mjolnirs.has(mjolnirRecord.local_part)) {
-            throw new TypeError(`${mjolnirRecord.local_part} is already running, we cannot start it.`);
+            throw new TypeError(
+                `${mjolnirRecord.local_part} is already running, we cannot start it.`,
+            );
         }
         const mjIntent = await this.makeMatrixIntent(mjolnirRecord.local_part);
         const access = this.accessControl.getUserAccess(mjolnirRecord.owner);
         if (access.outcome !== Access.Allowed) {
             // Don't await, we don't want to clobber initialization just because we can't tell someone they're no longer allowed.
-            mjIntent.matrixClient.sendNotice(mjolnirRecord.management_room, `Your mjolnir has been disabled by the administrator: ${access.rule?.reason ?? "no reason supplied"}`);
-            this.reportUnstartedMjolnir(UnstartedMjolnir.FailCode.Unauthorized, access.outcome, mjolnirRecord, mjIntent.userId);
+            mjIntent.matrixClient.sendNotice(
+                mjolnirRecord.management_room,
+                `Your mjolnir has been disabled by the administrator: ${
+                    access.rule?.reason ?? "no reason supplied"
+                }`,
+            );
+            this.reportUnstartedMjolnir(
+                UnstartedMjolnir.FailCode.Unauthorized,
+                access.outcome,
+                mjolnirRecord,
+                mjIntent.userId,
+            );
         } else {
             await this.makeInstance(
                 mjolnirRecord.owner,
                 mjolnirRecord.management_room,
                 mjIntent.matrixClient,
             ).catch((e: any) => {
-                log.error(`Could not start mjolnir ${mjolnirRecord.local_part} for ${mjolnirRecord.owner}:`, e);
+                log.error(
+                    `Could not start mjolnir ${mjolnirRecord.local_part} for ${mjolnirRecord.owner}:`,
+                    e,
+                );
                 // Don't await, we don't want to clobber initialization if this fails.
-                mjIntent.matrixClient.sendNotice(mjolnirRecord.management_room, `Your mjolnir could not be started. Please alert the administrator`);
-                this.reportUnstartedMjolnir(UnstartedMjolnir.FailCode.StartError, e, mjolnirRecord, mjIntent.userId);
+                mjIntent.matrixClient.sendNotice(
+                    mjolnirRecord.management_room,
+                    `Your mjolnir could not be started. Please alert the administrator`,
+                );
+                this.reportUnstartedMjolnir(
+                    UnstartedMjolnir.FailCode.StartError,
+                    e,
+                    mjolnirRecord,
+                    mjIntent.userId,
+                );
             });
         }
     }
@@ -226,7 +306,7 @@ export class ManagedMjolnir {
         public readonly ownerId: string,
         private readonly mjolnir: Mjolnir,
         private readonly matrixEmitter: MatrixIntentListener,
-    ) { }
+    ) {}
 
     public async onEvent(request: Request<WeakEvent>) {
         this.matrixEmitter.handleEvent(request.getData());
@@ -244,9 +324,11 @@ export class ManagedMjolnir {
             this.mjolnir.client,
             shortcode,
             [mjolnirOwnerId],
-            { name: `${mjolnirOwnerId}'s policy room` }
+            { name: `${mjolnirOwnerId}'s policy room` },
         );
-        const roomRef = MatrixRoomReference.fromPermalink(Permalinks.forRoom(listRoomId));
+        const roomRef = MatrixRoomReference.fromPermalink(
+            Permalinks.forRoom(listRoomId),
+        );
         await this.mjolnir.addProtectedRoom(listRoomId);
         return await this.mjolnir.policyListManager.watchList(roomRef);
     }
@@ -271,33 +353,38 @@ export class ManagedMjolnir {
  * api for all users on the appservice, almost the opposite of sync, we needed to create an
  * interface for both. See `MatrixEmitter`.
  */
-export class MatrixIntentListener extends EventEmitter implements MatrixEmitter {
+export class MatrixIntentListener
+    extends EventEmitter
+    implements MatrixEmitter
+{
     constructor(private readonly mjolnirId: string) {
-        super()
+        super();
     }
 
     public handleEvent(mxEvent: WeakEvent) {
         // These are ordered to be the same as matrix-bot-sdk's MatrixClient
         // They shouldn't need to be, but they are just in case it matters.
-        if (mxEvent['type'] === 'm.room.member' &&  mxEvent.state_key === this.mjolnirId) {
-            if (mxEvent['content']['membership'] === 'leave') {
-                this.emit('room.leave', mxEvent.room_id, mxEvent);
+        if (
+            mxEvent["type"] === "m.room.member" &&
+            mxEvent.state_key === this.mjolnirId
+        ) {
+            if (mxEvent["content"]["membership"] === "leave") {
+                this.emit("room.leave", mxEvent.room_id, mxEvent);
             }
-            if (mxEvent['content']['membership'] === 'invite') {
-                this.emit('room.invite', mxEvent.room_id, mxEvent);
+            if (mxEvent["content"]["membership"] === "invite") {
+                this.emit("room.invite", mxEvent.room_id, mxEvent);
             }
-            if (mxEvent['content']['membership'] === 'join') {
-                this.emit('room.join', mxEvent.room_id, mxEvent);
+            if (mxEvent["content"]["membership"] === "join") {
+                this.emit("room.join", mxEvent.room_id, mxEvent);
             }
         }
-        if (mxEvent.type === 'm.room.message') {
-            this.emit('room.message', mxEvent.room_id, mxEvent);
+        if (mxEvent.type === "m.room.message") {
+            this.emit("room.message", mxEvent.room_id, mxEvent);
         }
-        if (mxEvent.type === 'm.room.tombstone' && mxEvent.state_key === '') {
-            this.emit('room.archived', mxEvent.room_id, mxEvent);
+        if (mxEvent.type === "m.room.tombstone" && mxEvent.state_key === "") {
+            this.emit("room.archived", mxEvent.room_id, mxEvent);
         }
-        this.emit('room.event', mxEvent.room_id, mxEvent);
-
+        this.emit("room.event", mxEvent.room_id, mxEvent);
     }
 
     /**
@@ -321,9 +408,7 @@ export class UnstartedMjolnir {
         public readonly mxid: UserID,
         public readonly failCode: UnstartedMjolnir.FailCode,
         public readonly cause: any,
-    ) {
-
-    }
+    ) {}
 }
 
 export namespace UnstartedMjolnir {

@@ -7,10 +7,13 @@ import { MatrixEmitter, MatrixSendClient } from "../../MatrixEmitter";
 import { CommandError, CommandResult } from "./Validation";
 import { LogService } from "matrix-bot-sdk";
 
-type PresentationByReactionKey = Map<string/*reaction key*/, any/*presentation*/>;
+type PresentationByReactionKey = Map<
+    string /*reaction key*/,
+    any /*presentation*/
+>;
 
 // Returns true if the listener should be kept.
-type ReactionPromptListener = (presentation: any) => boolean|void;
+type ReactionPromptListener = (presentation: any) => boolean | void;
 
 // Instead of providing a map of reaciton keys to presentations, should instead
 // there be provided an object that can quickly be interned and uninterened from the table
@@ -26,17 +29,23 @@ class ReactionPromptRecord {
 }
 
 class ReactionHandler {
-    private readonly promptRecordByEvent: Map<string/*event id*/, Set<ReactionPromptRecord>> = new Map();
+    private readonly promptRecordByEvent: Map<
+        string /*event id*/,
+        Set<ReactionPromptRecord>
+    > = new Map();
 
     constructor(
         matrixEmitter: MatrixEmitter,
         private readonly userId: string,
         private readonly client: MatrixSendClient,
     ) {
-        matrixEmitter.on('room.event', this.handleEvent.bind(this))
+        matrixEmitter.on("room.event", this.handleEvent.bind(this));
     }
 
-    private addPresentationsForEvent(eventId: string, promptRecord: ReactionPromptRecord): void {
+    private addPresentationsForEvent(
+        eventId: string,
+        promptRecord: ReactionPromptRecord,
+    ): void {
         const promptRecords = (() => {
             let entry = this.promptRecordByEvent.get(eventId);
             if (entry === undefined) {
@@ -48,7 +57,10 @@ class ReactionHandler {
         promptRecords.add(promptRecord);
     }
 
-    private removePromptRecordForEvent(eventId: string, promptRecord: ReactionPromptRecord): void {
+    private removePromptRecordForEvent(
+        eventId: string,
+        promptRecord: ReactionPromptRecord,
+    ): void {
         const promptRecords = this.promptRecordByEvent.get(eventId);
         if (promptRecords !== undefined) {
             promptRecords.delete(promptRecord);
@@ -59,39 +71,64 @@ class ReactionHandler {
     }
 
     private async addBaseReactionsToEvent(
-            roomId: string, eventId: string, presentationsByKey: PresentationByReactionKey, limit = 7
+        roomId: string,
+        eventId: string,
+        presentationsByKey: PresentationByReactionKey,
+        limit = 7,
     ) {
-        return await [...presentationsByKey.keys()].slice(0, limit)
-            .reduce((acc, key) => acc.then(_ => this.client.unstableApis.addReactionToEvent(roomId, eventId, key)),
-                Promise.resolve());
+        return await [...presentationsByKey.keys()]
+            .slice(0, limit)
+            .reduce(
+                (acc, key) =>
+                    acc.then((_) =>
+                        this.client.unstableApis.addReactionToEvent(
+                            roomId,
+                            eventId,
+                            key,
+                        ),
+                    ),
+                Promise.resolve(),
+            );
     }
 
-    private handleEvent(roomId: string, event: { event_id: string, type: string, content: any, sender: string }): void {
+    private handleEvent(
+        roomId: string,
+        event: { event_id: string; type: string; content: any; sender: string },
+    ): void {
         // Horrid, would be nice to have some pattern matchy thingo
-        if (event.type !== 'm.reaction') {
+        if (event.type !== "m.reaction") {
             return;
         }
-        const relatesTo = event['content']?.['m.relates_to'];
+        const relatesTo = event["content"]?.["m.relates_to"];
         if (relatesTo === undefined) {
             return;
         }
-        if (relatesTo['rel_type'] !== 'm.annotation') {
+        if (relatesTo["rel_type"] !== "m.annotation") {
             return;
         }
-        const relatedEventId = relatesTo['event_id'];
-        const reactionKey = relatesTo['key'];
-        if (!(typeof relatedEventId === 'string' && typeof reactionKey === 'string')) {
+        const relatedEventId = relatesTo["event_id"];
+        const reactionKey = relatesTo["key"];
+        if (
+            !(
+                typeof relatedEventId === "string" &&
+                typeof reactionKey === "string"
+            )
+        ) {
             return;
         }
-        if (event['sender'] === this.userId) {
+        if (event["sender"] === this.userId) {
             return;
         }
         const entry = this.promptRecordByEvent.get(relatedEventId);
         if (entry !== undefined) {
             for (const record of entry) {
-                const presentation = record.presentationByReaction.get(reactionKey);
+                const presentation =
+                    record.presentationByReaction.get(reactionKey);
                 if (presentation === undefined) {
-                    LogService.warn("MatrixPromptUX", `Got an unknown reaction key for the event ${relatedEventId}: ${reactionKey}`)
+                    LogService.warn(
+                        "MatrixPromptUX",
+                        `Got an unknown reaction key for the event ${relatedEventId}: ${reactionKey}`,
+                    );
                 } else {
                     const keepListener = record.listener(presentation);
                     if (!Boolean(keepListener)) {
@@ -103,24 +140,38 @@ class ReactionHandler {
     }
 
     public async waitForReactionToPrompt<T>(
-        roomId: string, eventId: string, presentationByReaction: PresentationByReactionKey, timeout = 600_000 // ten minutes
+        roomId: string,
+        eventId: string,
+        presentationByReaction: PresentationByReactionKey,
+        timeout = 600_000, // ten minutes
     ): Promise<CommandResult<T, CommandError>> {
         let record;
         let timeoutId;
         const presentationOrTimeout = await Promise.race([
-            new Promise(resolve => {
-                record = new ReactionPromptRecord(presentationByReaction, resolve);
+            new Promise((resolve) => {
+                record = new ReactionPromptRecord(
+                    presentationByReaction,
+                    resolve,
+                );
                 this.addPresentationsForEvent(eventId, record);
-                this.addBaseReactionsToEvent(roomId, eventId, presentationByReaction);
+                this.addBaseReactionsToEvent(
+                    roomId,
+                    eventId,
+                    presentationByReaction,
+                );
             }),
-            new Promise(resolve => timeoutId = setTimeout(resolve, timeout)),
+            new Promise(
+                (resolve) => (timeoutId = setTimeout(resolve, timeout)),
+            ),
         ]);
         clearTimeout(timeoutId);
         if (presentationOrTimeout === undefined) {
             if (record !== undefined) {
                 this.removePromptRecordForEvent(eventId, record);
             }
-            return CommandError.Result(`Timed out while waiting for a response to the prompt`);
+            return CommandError.Result(
+                `Timed out while waiting for a response to the prompt`,
+            );
         } else {
             return CommandResult.Ok(presentationOrTimeout as T);
         }
@@ -141,7 +192,6 @@ class ReactionHandler {
 // * resolve the presentation by looking at the presentationsByKey for that token.
 // This is ovbiously complicated as hell, so i think we will just do without for now.
 
-
 // Shouldn't be a reaciton listener, since it needs to be able to notice reply fallbacks
 // like Yes/No and 1. or 2. etc.
 
@@ -158,7 +208,11 @@ export class PromptResponseListener {
         userId: string,
         client: MatrixSendClient,
     ) {
-        this.reactionHandler = new ReactionHandler(matrixEmitter, userId, client);
+        this.reactionHandler = new ReactionHandler(
+            matrixEmitter,
+            userId,
+            client,
+        );
     }
 
     private indexToReactionKey(index: number): string {
@@ -168,13 +222,25 @@ export class PromptResponseListener {
     // This won't work, we have to have a special key in the original event
     // that means we should be waiting for it, that can't be abused/forged.
     // As we can't have the event id AOT.
-    public async waitForPresentationList<T>(presentations: T[], roomId: string, eventPromise: Promise<string>): Promise<CommandResult<T>> {
+    public async waitForPresentationList<T>(
+        presentations: T[],
+        roomId: string,
+        eventPromise: Promise<string>,
+    ): Promise<CommandResult<T>> {
         const presentationByReactionKey = presentations.reduce(
-            (map: PresentationByReactionKey, presentation: T, index: number) => {
+            (
+                map: PresentationByReactionKey,
+                presentation: T,
+                index: number,
+            ) => {
                 return map.set(this.indexToReactionKey(index), presentation);
             },
-            new Map()
+            new Map(),
         );
-        return await this.reactionHandler.waitForReactionToPrompt<T>(roomId, await eventPromise, presentationByReactionKey);
+        return await this.reactionHandler.waitForReactionToPrompt<T>(
+            roomId,
+            await eventPromise,
+            presentationByReactionKey,
+        );
     }
 }

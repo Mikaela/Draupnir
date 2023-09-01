@@ -46,10 +46,26 @@ export const RULE_SERVER = EntityType.RULE_SERVER;
 // These are the current and historical types for each type of rule which were used while MSC2313 was being developed
 // and were left as an artifact for some time afterwards.
 // Most rules (as of writing) will have the prefix `m.room.rule.*` as this has been in use for roughly 2 years.
-export const USER_RULE_TYPES = [RULE_USER, "m.room.rule.user", "org.matrix.mjolnir.rule.user"];
-export const ROOM_RULE_TYPES = [RULE_ROOM, "m.room.rule.room", "org.matrix.mjolnir.rule.room"];
-export const SERVER_RULE_TYPES = [RULE_SERVER, "m.room.rule.server", "org.matrix.mjolnir.rule.server"];
-export const ALL_RULE_TYPES = [...USER_RULE_TYPES, ...ROOM_RULE_TYPES, ...SERVER_RULE_TYPES];
+export const USER_RULE_TYPES = [
+    RULE_USER,
+    "m.room.rule.user",
+    "org.matrix.mjolnir.rule.user",
+];
+export const ROOM_RULE_TYPES = [
+    RULE_ROOM,
+    "m.room.rule.room",
+    "org.matrix.mjolnir.rule.room",
+];
+export const SERVER_RULE_TYPES = [
+    RULE_SERVER,
+    "m.room.rule.server",
+    "org.matrix.mjolnir.rule.server",
+];
+export const ALL_RULE_TYPES = [
+    ...USER_RULE_TYPES,
+    ...ROOM_RULE_TYPES,
+    ...SERVER_RULE_TYPES,
+];
 
 export enum Recommendation {
     /// The rule recommends a "ban".
@@ -81,7 +97,7 @@ const RECOMMENDATION_BAN_VARIANTS = [
     // Stable
     Recommendation.Ban,
     // Unstable prefix, for compatibility.
-    "org.matrix.mjolnir.ban"
+    "org.matrix.mjolnir.ban",
 ];
 
 /**
@@ -89,22 +105,22 @@ const RECOMMENDATION_BAN_VARIANTS = [
  */
 const RECOMMENDATION_OPINION_VARIANTS: string[] = [
     // Unstable
-    Recommendation.Opinion
+    Recommendation.Opinion,
 ];
 
 const RECOMMENDATION_ALLOW_VARIANTS: string[] = [
     // Unstable
-    Recommendation.Allow
-]
+    Recommendation.Allow,
+];
 
 export const OPINION_MIN = -100;
 export const OPINION_MAX = +100;
 
 interface MatrixStateEvent {
-    type: string,
-    content: any,
-    event_id: string,
-    state_key: string,
+    type: string;
+    content: any;
+    event_id: string;
+    state_key: string;
 }
 
 /**
@@ -136,7 +152,8 @@ export abstract class ListRule {
          * The recommendation for this rule, e.g. "ban" or "opinion", or `null`
          * if the recommendation is one that Mjölnir doesn't understand.
          */
-        public readonly recommendation: Recommendation | null) {
+        public readonly recommendation: Recommendation | null,
+    ) {
         this.glob = new MatrixGlob(entity);
     }
 
@@ -163,25 +180,25 @@ export abstract class ListRule {
     public static parse(event: MatrixStateEvent): ListRule | null {
         // Parse common fields.
         // If a field is ill-formed, discard the rule.
-        const content = event['content'];
+        const content = event["content"];
         if (!content || typeof content !== "object") {
             return null;
         }
-        const entity = content['entity'];
+        const entity = content["entity"];
         if (!entity || typeof entity !== "string") {
             return null;
         }
-        const recommendation = content['recommendation'];
+        const recommendation = content["recommendation"];
         if (!recommendation || typeof recommendation !== "string") {
             return null;
         }
 
-        const reason = content['reason'] || '<no reason>';
+        const reason = content["reason"] || "<no reason>";
         if (typeof reason !== "string") {
             return null;
         }
 
-        let type = event['type'];
+        let type = event["type"];
         let kind;
         if (USER_RULE_TYPES.includes(type)) {
             kind = EntityType.RULE_USER;
@@ -197,7 +214,7 @@ export abstract class ListRule {
         if (RECOMMENDATION_BAN_VARIANTS.includes(recommendation)) {
             return new ListRuleBan(event, entity, reason, kind);
         } else if (RECOMMENDATION_OPINION_VARIANTS.includes(recommendation)) {
-            let opinion = content['opinion'];
+            let opinion = content["opinion"];
             if (!Number.isInteger(opinion)) {
                 return null;
             }
@@ -234,7 +251,7 @@ export class ListRuleBan extends ListRule {
          */
         kind: EntityType,
     ) {
-        super(sourceEvent, entity, reason, kind, Recommendation.Ban)
+        super(sourceEvent, entity, reason, kind, Recommendation.Ban);
     }
 }
 
@@ -260,7 +277,7 @@ export class ListRuleAllow extends ListRule {
          */
         kind: EntityType,
     ) {
-        super(sourceEvent, entity, reason, kind, Recommendation.Allow)
+        super(sourceEvent, entity, reason, kind, Recommendation.Allow);
     }
 }
 
@@ -290,14 +307,18 @@ export class ListRuleOpinion extends ListRule {
          * on the entity (e.g. toxic user or community) and +100 represents the best
          * possible opinion on the entity (e.g. pillar of the community).
          */
-        public readonly opinion: number
+        public readonly opinion: number,
     ) {
         super(sourceEvent, entity, reason, kind, Recommendation.Opinion);
         if (!Number.isInteger(opinion)) {
-            throw new TypeError(`The opinion must be an integer, got ${opinion}`);
+            throw new TypeError(
+                `The opinion must be an integer, got ${opinion}`,
+            );
         }
         if (opinion < OPINION_MIN || opinion > OPINION_MAX) {
-            throw new TypeError(`The opinion must be within [-100, +100], got ${opinion}`);
+            throw new TypeError(
+                `The opinion must be within [-100, +100], got ${opinion}`,
+            );
         }
     }
 }

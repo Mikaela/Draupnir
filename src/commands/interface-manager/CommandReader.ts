@@ -8,21 +8,30 @@ import { MatrixRoomReference } from "./MatrixRoomReference";
 import { Permalinks } from "./Permalinks";
 
 export interface ISuperCoolStream<T> {
-    readonly source: T
-    peekItem(eof?: any): T|any,
-    readItem(eof?: any): T|any,
-    getPosition(): number,
-    savingPositionIf<Result>(description: { predicate: (t: Result) => boolean, body: (stream: ISuperCoolStream<T>) => Result}): Result;
+    readonly source: T;
+    peekItem(eof?: any): T | any;
+    readItem(eof?: any): T | any;
+    getPosition(): number;
+    savingPositionIf<Result>(description: {
+        predicate: (t: Result) => boolean;
+        body: (stream: ISuperCoolStream<T>) => Result;
+    }): Result;
 }
 
-export class SuperCoolStream<T extends { at: (...args: any) => any|undefined}> implements ISuperCoolStream<T> {
-    protected position: number
+export class SuperCoolStream<
+    T extends { at: (...args: any) => any | undefined },
+> implements ISuperCoolStream<T>
+{
+    protected position: number;
     /**
      * Makes the super cool string stream.
      * @param source A string to act as the source of the stream.
      * @param start Where in the string we should start reading.
      */
-    constructor(public readonly source: T, start = 0) {
+    constructor(
+        public readonly source: T,
+        start = 0,
+    ) {
         this.position = start;
     }
 
@@ -38,7 +47,10 @@ export class SuperCoolStream<T extends { at: (...args: any) => any|undefined}> i
         return this.position;
     }
 
-    savingPositionIf<Result>(description: { predicate: (t: Result) => boolean; body: (stream: SuperCoolStream<T>) => Result; }): Result {
+    savingPositionIf<Result>(description: {
+        predicate: (t: Result) => boolean;
+        body: (stream: SuperCoolStream<T>) => Result;
+    }): Result {
         const previousPosition = this.position;
         const bodyResult = description.body(this);
         if (description.predicate(bodyResult)) {
@@ -62,7 +74,7 @@ class StringStream extends SuperCoolStream<string> {
 }
 
 /** Whitespace we want to nom. */
-const WHITESPACE = [' ', '\r', '\f', '\v', '\n', '\t'];
+const WHITESPACE = [" ", "\r", "\f", "\v", "\n", "\t"];
 
 /**
  * Transforms a command from a string to a list of `ReadItem`s.
@@ -92,12 +104,16 @@ const WHITESPACE = [' ', '\r', '\f', '\v', '\n', '\t'];
  * @returns ReadItems that have been read from this command.
  */
 export function readCommand(string: string): ReadItem[] {
-    return readCommandFromStream(new StringStream(string))
+    return readCommandFromStream(new StringStream(string));
 }
 
 function readCommandFromStream(stream: StringStream): ReadItem[] {
     const words: ReadItem[] = [];
-    while (stream.peekChar() !== undefined && (eatWhitespace(stream), true) && stream.peekChar() !== undefined) {
+    while (
+        stream.peekChar() !== undefined &&
+        (eatWhitespace(stream), true) &&
+        stream.peekChar() !== undefined
+    ) {
         words.push(readItem(stream));
     }
     return words.map(applyPostReadTransformersToReadItem);
@@ -114,10 +130,10 @@ function eatWhitespace(stream: StringStream): void {
  */
 function readItem(stream: StringStream): ReadItem {
     if (stream.peekChar() === undefined) {
-        throw new TypeError('EOF');
+        throw new TypeError("EOF");
     }
     if (WHITESPACE.includes(stream.peekChar()!)) {
-        throw new TypeError('whitespace should have been stripped');
+        throw new TypeError("whitespace should have been stripped");
     }
     const dispatchCharacter = stream.peekChar()!;
     const macro = WORD_DISPATCH_CHARACTERS.get(dispatchCharacter);
@@ -127,7 +143,7 @@ function readItem(stream: StringStream): ReadItem {
         // Then read a normal word.
         const word: string[] = [stream.readChar()!];
         readUntil(/\s/, stream, word);
-        return word.join('');
+        return word.join("");
     }
 }
 
@@ -148,15 +164,19 @@ export type ReadItem = string | MatrixRoomReference | UserID | Keyword;
  */
 function defineReadItem(dispatchCharacter: string, macro: ReadMacro) {
     if (WORD_DISPATCH_CHARACTERS.has(dispatchCharacter)) {
-        throw new TypeError(`Read macro already defined for this dispatch character: ${dispatchCharacter}`);
+        throw new TypeError(
+            `Read macro already defined for this dispatch character: ${dispatchCharacter}`,
+        );
     }
     WORD_DISPATCH_CHARACTERS.set(dispatchCharacter, macro);
 }
 
-type PostReadStringReplaceTransformer = (item: string) => ReadItem|string;
-type TransformerEntry = { regex: RegExp, transformer: PostReadStringReplaceTransformer };
+type PostReadStringReplaceTransformer = (item: string) => ReadItem | string;
+type TransformerEntry = {
+    regex: RegExp;
+    transformer: PostReadStringReplaceTransformer;
+};
 const POST_READ_TRANSFORMERS = new Map<string, TransformerEntry>();
-
 
 /**
  * Define a function that will be applied to ReadItem's that are strings that
@@ -166,15 +186,20 @@ const POST_READ_TRANSFORMERS = new Map<string, TransformerEntry>();
  *
  * This is mainly used to transform URLs into a MatrixRoomReference.
  */
-function definePostReadReplace(regex: RegExp, transformer: PostReadStringReplaceTransformer) {
+function definePostReadReplace(
+    regex: RegExp,
+    transformer: PostReadStringReplaceTransformer,
+) {
     if (POST_READ_TRANSFORMERS.has(regex.source)) {
-        throw new TypeError(`A transformer has already been defined for the regexp ${regex.source}`);
+        throw new TypeError(
+            `A transformer has already been defined for the regexp ${regex.source}`,
+        );
     }
-    POST_READ_TRANSFORMERS.set(regex.source, { regex, transformer })
+    POST_READ_TRANSFORMERS.set(regex.source, { regex, transformer });
 }
 
 function applyPostReadTransformersToReadItem(item: ReadItem): ReadItem {
-    if (typeof item === 'string') {
+    if (typeof item === "string") {
         for (const [_key, { regex, transformer }] of POST_READ_TRANSFORMERS) {
             if (regex.test(item)) {
                 return transformer(item);
@@ -204,34 +229,40 @@ function readUntil(regex: RegExp, stream: StringStream, output: string[]) {
  * @param stream The stream to consume the room reference from.
  * @returns A MatrixRoomReference or string if what has been read does not represent a room.
  */
-function readRoomIDOrAlias(stream: StringStream): MatrixRoomReference|string {
+function readRoomIDOrAlias(stream: StringStream): MatrixRoomReference | string {
     const word: string[] = [stream.readChar()!];
     readUntil(/[:\s]/, stream, word);
-    if (stream.peekChar() === undefined || WHITESPACE.includes(stream.peekChar()!)) {
-        return word.join('');
+    if (
+        stream.peekChar() === undefined ||
+        WHITESPACE.includes(stream.peekChar()!)
+    ) {
+        return word.join("");
     }
     readUntil(/\s/, stream, word);
-    return MatrixRoomReference.fromRoomIdOrAlias(word.join(''));
+    return MatrixRoomReference.fromRoomIdOrAlias(word.join(""));
 }
 
 /**
  * Read the word as an alias if it is an alias, otherwise it will just return a string token.
  */
-defineReadItem('#', readRoomIDOrAlias);
-defineReadItem('!', readRoomIDOrAlias);
+defineReadItem("#", readRoomIDOrAlias);
+defineReadItem("!", readRoomIDOrAlias);
 
 /**
  * Read the word as a UserID, otherwise return a string if what has been read doesn not represent a user.
  */
-defineReadItem('@', (stream: StringStream): UserID|string => {
+defineReadItem("@", (stream: StringStream): UserID | string => {
     const word: string[] = [stream.readChar()!];
     readUntil(/[:\s]/, stream, word);
-    if (stream.peekChar() === undefined || WHITESPACE.includes(stream.peekChar()!)) {
-        return word.join('');
+    if (
+        stream.peekChar() === undefined ||
+        WHITESPACE.includes(stream.peekChar()!)
+    ) {
+        return word.join("");
     }
     readUntil(/\s/, stream, word);
-    return new UserID(word.join(''));
-})
+    return new UserID(word.join(""));
+});
 
 /**
  * Used for keyword arguments (also known as "options", but this isn't specific enough as it could mean an optional argument).
@@ -256,17 +287,17 @@ export class Keyword {
 function readKeyword(stream: StringStream): Keyword {
     readUntil(/[^-:]/, stream, []);
     if (stream.peekChar() === undefined) {
-        return new Keyword('');
+        return new Keyword("");
     }
-    const word: string[] = [stream.readChar()!]
-    readUntil(/[\s]/, stream, word)
-    return new Keyword(word.join(''));
+    const word: string[] = [stream.readChar()!];
+    readUntil(/[\s]/, stream, word);
+    return new Keyword(word.join(""));
 }
 
-defineReadItem('-', readKeyword);
-defineReadItem(':', readKeyword);
+defineReadItem("-", readKeyword);
+defineReadItem(":", readKeyword);
 
-definePostReadReplace(/^https:\/\/matrix\.to/, input => {
+definePostReadReplace(/^https:\/\/matrix\.to/, (input) => {
     const url = Permalinks.parseUrl(input);
     if (url.eventId !== undefined) {
         // don't know what to turn event references into yet.
@@ -274,4 +305,4 @@ definePostReadReplace(/^https:\/\/matrix\.to/, input => {
     } else {
         return MatrixRoomReference.fromPermalink(input);
     }
-})
+});

@@ -29,7 +29,12 @@ import { Mjolnir } from "../Mjolnir";
 import { LogLevel, MatrixGlob, RichReply } from "matrix-bot-sdk";
 
 // !mjolnir kick <user|filter> [room] [reason]
-export async function execKickCommand(roomId: string, event: any, mjolnir: Mjolnir, parts: string[]) {
+export async function execKickCommand(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+    parts: string[],
+) {
     let force = false;
 
     const glob = parts[2];
@@ -40,9 +45,19 @@ export async function execKickCommand(roomId: string, event: any, mjolnir: Mjoln
         parts.pop();
     }
 
-    if (mjolnir.config.commands.confirmWildcardBan && /[*?]/.test(glob) && !force) {
-        let replyMessage = "Wildcard bans require an addition `--force` argument to confirm";
-        const reply = RichReply.createFor(roomId, event, replyMessage, replyMessage);
+    if (
+        mjolnir.config.commands.confirmWildcardBan &&
+        /[*?]/.test(glob) &&
+        !force
+    ) {
+        let replyMessage =
+            "Wildcard bans require an addition `--force` argument to confirm";
+        const reply = RichReply.createFor(
+            roomId,
+            event,
+            replyMessage,
+            replyMessage,
+        );
         reply["msgtype"] = "m.notice";
         await mjolnir.client.sendMessage(roomId, reply);
         return;
@@ -57,33 +72,60 @@ export async function execKickCommand(roomId: string, event: any, mjolnir: Mjoln
             rooms = [await mjolnir.client.resolveRoom(parts[3])];
             reasonIndex = 4;
         }
-        reason = parts.slice(reasonIndex).join(' ') || '<no reason supplied>';
+        reason = parts.slice(reasonIndex).join(" ") || "<no reason supplied>";
     }
-    if (!reason) reason = '<none supplied>';
+    if (!reason) reason = "<none supplied>";
 
     for (const protectedRoomId of rooms) {
-        const members = await mjolnir.client.getRoomMembers(protectedRoomId, undefined, ["join"], ["ban", "leave"]);
+        const members = await mjolnir.client.getRoomMembers(
+            protectedRoomId,
+            undefined,
+            ["join"],
+            ["ban", "leave"],
+        );
 
         for (const member of members) {
             const victim = member.membershipFor;
 
             if (kickRule.test(victim)) {
-                await mjolnir.managementRoomOutput.logMessage(LogLevel.DEBUG, "KickCommand", `Removing ${victim} in ${protectedRoomId}`, protectedRoomId);
+                await mjolnir.managementRoomOutput.logMessage(
+                    LogLevel.DEBUG,
+                    "KickCommand",
+                    `Removing ${victim} in ${protectedRoomId}`,
+                    protectedRoomId,
+                );
 
                 if (!mjolnir.config.noop) {
                     try {
                         await mjolnir.taskQueue.push(async () => {
-                            return mjolnir.client.kickUser(victim, protectedRoomId, reason);
+                            return mjolnir.client.kickUser(
+                                victim,
+                                protectedRoomId,
+                                reason,
+                            );
                         });
                     } catch (e) {
-                        await mjolnir.managementRoomOutput.logMessage(LogLevel.WARN, "KickCommand", `An error happened while trying to kick ${victim}: ${e}`);
+                        await mjolnir.managementRoomOutput.logMessage(
+                            LogLevel.WARN,
+                            "KickCommand",
+                            `An error happened while trying to kick ${victim}: ${e}`,
+                        );
                     }
                 } else {
-                    await mjolnir.managementRoomOutput.logMessage(LogLevel.WARN, "KickCommand", `Tried to kick ${victim} in ${protectedRoomId} but the bot is running in no-op mode.`, protectedRoomId);
+                    await mjolnir.managementRoomOutput.logMessage(
+                        LogLevel.WARN,
+                        "KickCommand",
+                        `Tried to kick ${victim} in ${protectedRoomId} but the bot is running in no-op mode.`,
+                        protectedRoomId,
+                    );
                 }
             }
         }
     }
 
-    return mjolnir.client.unstableApis.addReactionToEvent(roomId, event['event_id'], '✅');
+    return mjolnir.client.unstableApis.addReactionToEvent(
+        roomId,
+        event["event_id"],
+        "✅",
+    );
 }

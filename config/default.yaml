@@ -229,8 +229,6 @@ health:
     # and 1.0 means "trace performance at every opportunity".
     # tracesSampleRate: 0.5
 
-
-
 # Options for exposing web APIs.
 web:
   # Whether to enable web APIs.

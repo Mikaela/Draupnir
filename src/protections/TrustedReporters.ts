@@ -26,7 +26,10 @@ limitations under the License.
  */
 
 import { Protection } from "./Protection";
-import { MXIDListProtectionSetting, NumberProtectionSetting } from "./ProtectionSettings";
+import {
+    MXIDListProtectionSetting,
+    NumberProtectionSetting,
+} from "./ProtectionSettings";
 import { Mjolnir } from "../Mjolnir";
 
 const MAX_REPORTED_EVENT_BACKLOG = 20;
@@ -36,14 +39,17 @@ const MAX_REPORTED_EVENT_BACKLOG = 20;
  * events that surpass configured report count thresholds
  */
 export class TrustedReporters extends Protection {
-    private recentReported = new Map<string /* eventId */, Set<string /* reporterId */>>();
+    private recentReported = new Map<
+        string /* eventId */,
+        Set<string /* reporterId */>
+    >();
 
     settings = {
         mxids: new MXIDListProtectionSetting(),
         alertThreshold: new NumberProtectionSetting(3),
         // -1 means 'disabled'
         redactThreshold: new NumberProtectionSetting(-1),
-        banThreshold: new NumberProtectionSetting(-1)
+        banThreshold: new NumberProtectionSetting(-1),
     };
 
     constructor() {
@@ -51,16 +57,22 @@ export class TrustedReporters extends Protection {
     }
 
     public get name(): string {
-        return 'TrustedReporters';
+        return "TrustedReporters";
     }
     public get description(): string {
         return "Count reports from trusted reporters and take a configured action";
     }
 
-    public async handleReport(mjolnir: Mjolnir, roomId: string, reporterId: string, event: any, reason?: string): Promise<any> {
+    public async handleReport(
+        mjolnir: Mjolnir,
+        roomId: string,
+        reporterId: string,
+        event: any,
+        reason?: string,
+    ): Promise<any> {
         if (!this.settings.mxids.value.includes(reporterId)) {
             // not a trusted user, we're not interested
-            return
+            return;
         }
 
         let reporters = this.recentReported.get(event.id);
@@ -84,19 +96,28 @@ export class TrustedReporters extends Protection {
         }
         if (reporters.size === this.settings.redactThreshold.value) {
             met.push("redact");
-            await mjolnir.client.redactEvent(roomId, event.id, "abuse detected");
+            await mjolnir.client.redactEvent(
+                roomId,
+                event.id,
+                "abuse detected",
+            );
         }
         if (reporters.size === this.settings.banThreshold.value) {
             met.push("ban");
-            await mjolnir.client.banUser(event.userId, roomId, "abuse detected");
+            await mjolnir.client.banUser(
+                event.userId,
+                roomId,
+                "abuse detected",
+            );
         }
-
 
         if (met.length > 0) {
             await mjolnir.client.sendMessage(mjolnir.config.managementRoom, {
                 msgtype: "m.notice",
-                body: `message ${event.id} reported by ${[...reporters].join(', ')}. `
-                    + `actions: ${met.join(', ')}`
+                body:
+                    `message ${event.id} reported by ${[...reporters].join(
+                        ", ",
+                    )}. ` + `actions: ${met.join(", ")}`,
             });
         }
     }

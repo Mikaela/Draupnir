@@ -33,10 +33,12 @@ import { IConfig } from "../config";
 export class Healthz {
     private healthCode: number;
 
-    constructor(private config: IConfig) { }
+    constructor(private config: IConfig) {}
 
     public set isHealthy(val: boolean) {
-        this.healthCode = val ? this.config.health.healthz.healthyStatus : this.config.health.healthz.unhealthyStatus;
+        this.healthCode = val
+            ? this.config.health.healthz.healthyStatus
+            : this.config.health.healthz.unhealthyStatus;
     }
 
     public get isHealthy(): boolean {
@@ -48,8 +50,15 @@ export class Healthz {
             res.writeHead(this.healthCode);
             res.end(`health code: ${this.healthCode}`);
         });
-        server.listen(this.config.health.healthz.port, this.config.health.healthz.address, () => {
-            LogService.info("Healthz", `Listening for health requests on ${this.config.health.healthz.address}:${this.config.health.healthz.port}`);
-        });
+        server.listen(
+            this.config.health.healthz.port,
+            this.config.health.healthz.address,
+            () => {
+                LogService.info(
+                    "Healthz",
+                    `Listening for health requests on ${this.config.health.healthz.address}:${this.config.health.healthz.port}`,
+                );
+            },
+        );
     }
 }

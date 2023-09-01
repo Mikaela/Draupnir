@@ -35,13 +35,12 @@ import {
     MatrixClient,
     PantalaimonClient,
     RichConsoleLogger,
-    SimpleFsStorageProvider
+    SimpleFsStorageProvider,
 } from "matrix-bot-sdk";
 
 import { read as configRead } from "./config";
 import { Mjolnir } from "./Mjolnir";
 import { initializeSentry, patchMatrixClient } from "./utils";
-
 
 (async function () {
     const config = configRead();
@@ -65,22 +64,38 @@ import { initializeSentry, patchMatrixClient } from "./utils";
 
     let bot: Mjolnir | null = null;
     try {
-        const storagePath = path.isAbsolute(config.dataPath) ? config.dataPath : path.join(__dirname, '../', config.dataPath);
-        const storage = new SimpleFsStorageProvider(path.join(storagePath, "bot.json"));
+        const storagePath = path.isAbsolute(config.dataPath)
+            ? config.dataPath
+            : path.join(__dirname, "../", config.dataPath);
+        const storage = new SimpleFsStorageProvider(
+            path.join(storagePath, "bot.json"),
+        );
 
         let client: MatrixClient;
         if (config.pantalaimon.use) {
-            const pantalaimon = new PantalaimonClient(config.homeserverUrl, storage);
-            client = await pantalaimon.createClientWithCredentials(config.pantalaimon.username, config.pantalaimon.password);
+            const pantalaimon = new PantalaimonClient(
+                config.homeserverUrl,
+                storage,
+            );
+            client = await pantalaimon.createClientWithCredentials(
+                config.pantalaimon.username,
+                config.pantalaimon.password,
+            );
         } else {
-            client = new MatrixClient(config.homeserverUrl, config.accessToken, storage);
+            client = new MatrixClient(
+                config.homeserverUrl,
+                config.accessToken,
+                storage,
+            );
         }
         patchMatrixClient();
         config.RUNTIME.client = client;
 
         bot = await Mjolnir.setupMjolnirFromConfig(client, client, config);
     } catch (err) {
-        console.error(`Failed to setup mjolnir from the config ${config.dataPath}: ${err}`);
+        console.error(
+            `Failed to setup mjolnir from the config ${config.dataPath}: ${err}`,
+        );
         throw err;
     }
     try {

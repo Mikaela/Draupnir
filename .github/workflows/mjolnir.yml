@@ -2,11 +2,11 @@ name: Tests
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
-    - cron: '20 20 * * *'
+    - cron: "20 20 * * *"
 env:
   CARGO_TERM_COLOR: always
 
@@ -15,67 +15,67 @@ jobs:
     name: Build & Lint
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Specifically use node 18 like in the readme.
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    - run: yarn install
-    - run: yarn build
-    - run: yarn lint
+      - name: Specifically use node 18 like in the readme.
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+      - run: yarn install
+      - run: yarn build
+      - run: yarn lint
   unit:
     name: Unit tests
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Specifically use node 18 like in the readme.
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    - run: yarn install
-    - run: yarn test
+      - uses: actions/checkout@v3
+      - name: Specifically use node 18 like in the readme.
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+      - run: yarn install
+      - run: yarn test
   integration:
     name: Integration tests
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    - name: Fetch and build mx-tester (cached across runs)
-      uses: baptiste0928/cargo-install@v1
-      with:
-        crate: mx-tester
-        version: "0.3.3"
-    - name: Setup image
-      run: RUST_LOG=debug,hyper=info,rusttls=info mx-tester build up
-    - name: Setup dependencies
-      run: yarn install
-    - name: Run tests
-      run: RUST_LOG=debug,hyper=info,rusttls=info mx-tester run
-    - name: Cleanup
-      run: mx-tester down
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+      - name: Fetch and build mx-tester (cached across runs)
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: mx-tester
+          version: "0.3.3"
+      - name: Setup image
+        run: RUST_LOG=debug,hyper=info,rusttls=info mx-tester build up
+      - name: Setup dependencies
+        run: yarn install
+      - name: Run tests
+        run: RUST_LOG=debug,hyper=info,rusttls=info mx-tester run
+      - name: Cleanup
+        run: mx-tester down
   appservice-integration:
     name: Application Service Integration tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-    - name: Fetch and build mx-tester (cached across runs)
-      uses: baptiste0928/cargo-install@v1
-      with:
-        crate: mx-tester
-        version: "0.3.3"
-    - name: Setup image
-      run: RUST_LOG=debug,hyper=info,rusttls=info mx-tester build up
-    - name: Setup dependencies
-      run: yarn install
-    - name: Run tests
-      run: yarn test:appservice:integration
-    - name: Cleanup
-      run: mx-tester down
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+      - name: Fetch and build mx-tester (cached across runs)
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: mx-tester
+          version: "0.3.3"
+      - name: Setup image
+        run: RUST_LOG=debug,hyper=info,rusttls=info mx-tester build up
+      - name: Setup dependencies
+        run: yarn install
+      - name: Run tests
+        run: yarn test:appservice:integration
+      - name: Cleanup
+        run: mx-tester down

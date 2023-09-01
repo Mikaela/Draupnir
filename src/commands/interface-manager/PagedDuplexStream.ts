@@ -13,14 +13,11 @@ import { DocumentNode } from "./DeadDocument";
  */
 
 export class PagedDuplexStream {
-    private buffer = '';
-    private pages: string[] = [''];
+    private buffer = "";
+    private pages: string[] = [""];
 
     private lastCommittedNode?: DocumentNode;
-    constructor(
-        public readonly sizeLimit = 20000
-    ) {
-    }
+    constructor(public readonly sizeLimit = 20000) {}
 
     private get currentPage(): string {
         return this.pages.at(this.pages.length - 1)!;
@@ -41,7 +38,7 @@ export class PagedDuplexStream {
     }
 
     public isPageAndBufferOverSize(): boolean {
-        return (this.currentPage.length + this.buffer.length) > this.sizeLimit;
+        return this.currentPage.length + this.buffer.length > this.sizeLimit;
     }
 
     /**
@@ -50,7 +47,7 @@ export class PagedDuplexStream {
      */
     public ensureNewPage(): void {
         if (this.currentPage.length !== 0) {
-            this.pages.push('');
+            this.pages.push("");
         }
     }
 
@@ -65,13 +62,18 @@ export class PagedDuplexStream {
      */
     public commit(node: DocumentNode): void {
         if (this.isPageAndBufferOverSize()) {
-            if (this.currentPage.length === 0 && (this.buffer.length > this.sizeLimit)) {
-                throw new TypeError('Commit is too large, could not write a page for this commit');
+            if (
+                this.currentPage.length === 0 &&
+                this.buffer.length > this.sizeLimit
+            ) {
+                throw new TypeError(
+                    "Commit is too large, could not write a page for this commit",
+                );
             }
             this.ensureNewPage();
         }
         this.appendToCurrentPage(this.buffer);
-        this.buffer = '';
+        this.buffer = "";
         this.lastCommittedNode = node;
     }
 

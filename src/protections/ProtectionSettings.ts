@@ -36,7 +36,7 @@ parseDuration["weeks"] = parseDuration["week"] = parseDuration["wk"];
 parseDuration["months"] = parseDuration["month"];
 parseDuration["years"] = parseDuration["year"];
 
-export class ProtectionSettingValidationError extends Error {};
+export class ProtectionSettingValidationError extends Error {}
 
 /*
  * @param TChange Type for individual pieces of data (e.g. `string`)
@@ -44,7 +44,7 @@ export class ProtectionSettingValidationError extends Error {};
  */
 export class AbstractProtectionSetting<TChange, TValue> extends EventEmitter {
     // the current value of this setting
-    value: TValue
+    value: TValue;
 
     /*
      * Deserialise a value for this setting type from a string
@@ -75,7 +75,10 @@ export class AbstractProtectionSetting<TChange, TValue> extends EventEmitter {
         this.emit("set", data);
     }
 }
-export class AbstractProtectionListSetting<TChange, TValue> extends AbstractProtectionSetting<TChange, TValue> {
+export class AbstractProtectionListSetting<
+    TChange,
+    TValue,
+> extends AbstractProtectionSetting<TChange, TValue> {
     /*
      * Add `data` to the current setting value, and return that new object
      *
@@ -96,17 +99,24 @@ export class AbstractProtectionListSetting<TChange, TValue> extends AbstractProt
         throw new Error("not Implemented");
     }
 }
-export function isListSetting(object: any): object is AbstractProtectionListSetting<any, any> {
+export function isListSetting(
+    object: any,
+): object is AbstractProtectionListSetting<any, any> {
     return object instanceof AbstractProtectionListSetting;
 }
 
-
-export class StringProtectionSetting extends AbstractProtectionSetting<string, string> {
+export class StringProtectionSetting extends AbstractProtectionSetting<
+    string,
+    string
+> {
     value = "";
     fromString = (data: string): string => data;
     validate = (data: string): boolean => true;
 }
-export class StringListProtectionSetting extends AbstractProtectionListSetting<string, string[]> {
+export class StringListProtectionSetting extends AbstractProtectionListSetting<
+    string,
+    string[]
+> {
     value: string[] = [];
     fromString = (data: string): string => data;
     validate = (data: string): boolean => true;
@@ -117,12 +127,15 @@ export class StringListProtectionSetting extends AbstractProtectionListSetting<s
     }
     removeValue(data: string): string[] {
         this.emit("remove", data);
-        this.value =  this.value.filter(i => i !== data);
+        this.value = this.value.filter((i) => i !== data);
         return this.value;
     }
 }
 
-export class StringSetProtectionSetting extends AbstractProtectionListSetting<string, Set<String>> {
+export class StringSetProtectionSetting extends AbstractProtectionListSetting<
+    string,
+    Set<String>
+> {
     value: Set<string> = new Set();
     fromString = (data: string): string => data;
     validate = (data: string): boolean => true;
@@ -144,14 +157,17 @@ export class MXIDListProtectionSetting extends StringListProtectionSetting {
     validate = (data: string) => /^@\S+:\S+$/.test(data);
 }
 
-export class NumberProtectionSetting extends AbstractProtectionSetting<number, number> {
-    min: number|undefined;
-    max: number|undefined;
+export class NumberProtectionSetting extends AbstractProtectionSetting<
+    number,
+    number
+> {
+    min: number | undefined;
+    max: number | undefined;
 
     constructor(
-            defaultValue: number,
-            min: number|undefined = undefined,
-            max: number|undefined = undefined
+        defaultValue: number,
+        min: number | undefined = undefined,
+        max: number | undefined = undefined,
     ) {
         super();
         this.setValue(defaultValue);
@@ -164,9 +180,11 @@ export class NumberProtectionSetting extends AbstractProtectionSetting<number, n
         return isNaN(number) ? undefined : number;
     }
     validate(data: number) {
-        return (!isNaN(data)
-            && (this.min === undefined || this.min <= data)
-            && (this.max === undefined || data <= this.max))
+        return (
+            !isNaN(data) &&
+            (this.min === undefined || this.min <= data) &&
+            (this.max === undefined || data <= this.max)
+        );
     }
 }
 
@@ -175,11 +193,14 @@ export class NumberProtectionSetting extends AbstractProtectionSetting<number, n
  *
  * When parsing, the setting expects a unit, e.g. "1ms".
  */
-export class DurationMSProtectionSetting extends AbstractProtectionSetting<number, number> {
+export class DurationMSProtectionSetting extends AbstractProtectionSetting<
+    number,
+    number
+> {
     constructor(
-            defaultValue: number,
-            public readonly minMS: number|undefined = undefined,
-            public readonly maxMS: number|undefined = undefined
+        defaultValue: number,
+        public readonly minMS: number | undefined = undefined,
+        public readonly maxMS: number | undefined = undefined,
     ) {
         super();
         this.setValue(defaultValue);
@@ -190,8 +211,10 @@ export class DurationMSProtectionSetting extends AbstractProtectionSetting<numbe
         return isNaN(number) ? undefined : number;
     }
     validate(data: number) {
-        return (!isNaN(data)
-            && (this.minMS === undefined || this.minMS <= data)
-            && (this.maxMS === undefined || data <= this.maxMS))
+        return (
+            !isNaN(data) &&
+            (this.minMS === undefined || this.minMS <= data) &&
+            (this.maxMS === undefined || data <= this.maxMS)
+        );
     }
 }

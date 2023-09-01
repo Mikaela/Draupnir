@@ -12,16 +12,20 @@ const cli = new Cli({
     bridgeConfig: {
         schema: {},
         affectsRegistration: false,
-        defaults: {}
+        defaults: {},
     },
     generateRegistration: MjolnirAppService.generateRegistration,
-    run: async function(port: number) {
+    run: async function (port: number) {
         const config: IConfig | null = cli.getConfig() as any;
         if (config === null) {
             throw new Error("Couldn't load config");
         }
-        await MjolnirAppService.run(port, config, cli.getRegistrationFilePath());
-    }
+        await MjolnirAppService.run(
+            port,
+            config,
+            cli.getRegistrationFilePath(),
+        );
+    },
 });
 
 cli.run();

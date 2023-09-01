@@ -64,8 +64,7 @@ export interface PermalinkParts {
  * @category Utilities
  */
 export class Permalinks {
-    private constructor() {
-    }
+    private constructor() {}
 
     private static encodeViaArgs(servers: string[]): string {
         if (!servers || !servers.length) return "";
@@ -79,8 +78,13 @@ export class Permalinks {
      * @param {string[]} viaServers The servers to route the permalink through.
      * @returns {string} A room permalink.
      */
-    public static forRoom(roomIdOrAlias: string, viaServers: string[] = []): string {
-        return `https://matrix.to/#/${encodeURIComponent(roomIdOrAlias)}${Permalinks.encodeViaArgs(viaServers)}`;
+    public static forRoom(
+        roomIdOrAlias: string,
+        viaServers: string[] = [],
+    ): string {
+        return `https://matrix.to/#/${encodeURIComponent(
+            roomIdOrAlias,
+        )}${Permalinks.encodeViaArgs(viaServers)}`;
     }
 
     /**
@@ -99,8 +103,16 @@ export class Permalinks {
      * @param {string[]} viaServers The servers to route the permalink through.
      * @returns {string} An event permalink.
      */
-    public static forEvent(roomIdOrAlias: string, eventId: string, viaServers: string[] = []): string {
-        return `https://matrix.to/#/${encodeURIComponent(roomIdOrAlias)}/${encodeURIComponent(eventId)}${Permalinks.encodeViaArgs(viaServers)}`;
+    public static forEvent(
+        roomIdOrAlias: string,
+        eventId: string,
+        viaServers: string[] = [],
+    ): string {
+        return `https://matrix.to/#/${encodeURIComponent(
+            roomIdOrAlias,
+        )}/${encodeURIComponent(eventId)}${Permalinks.encodeViaArgs(
+            viaServers,
+        )}`;
     }
 
     /**
@@ -109,7 +121,8 @@ export class Permalinks {
      * @returns {PermalinkParts} The parts of the permalink.
      */
     public static parseUrl(matrixTo: string): PermalinkParts {
-        const matrixToRegexp = /^https:\/\/matrix\.to\/#\/(?<entity>[^/?]+)\/?(?<eventId>[^?]+)?(?<query>\?[^]*)?$/;
+        const matrixToRegexp =
+            /^https:\/\/matrix\.to\/#\/(?<entity>[^/?]+)\/?(?<eventId>[^?]+)?(?<query>\?[^]*)?$/;
 
         const url = matrixToRegexp.exec(matrixTo)?.groups;
         if (!url) {
@@ -117,14 +130,19 @@ export class Permalinks {
         }
 
         const entity = decodeURIComponent(url.entity);
-        if (entity[0] === '@') {
-            return { userId: entity, roomIdOrAlias: undefined, eventId: undefined, viaServers: [] };
-        } else if (entity[0] === '#' || entity[0] === '!') {
+        if (entity[0] === "@") {
+            return {
+                userId: entity,
+                roomIdOrAlias: undefined,
+                eventId: undefined,
+                viaServers: [],
+            };
+        } else if (entity[0] === "#" || entity[0] === "!") {
             return {
                 userId: undefined,
                 roomIdOrAlias: entity,
                 eventId: url.eventId && decodeURIComponent(url.eventId),
-                viaServers: new URLSearchParams(url.query).getAll('via'),
+                viaServers: new URLSearchParams(url.query).getAll("via"),
             };
         } else {
             throw new Error("Unexpected entity");

@@ -37,12 +37,10 @@ import PolicyList from "../models/PolicyList";
  * Internally we use a policy list within matrix to determine who has access via the `AccessControlUnit`.
  */
 export class AccessControl {
-
     private constructor(
         private readonly accessControlList: PolicyList,
-        private readonly accessControlUnit: AccessControlUnit
-        ) {
-    }
+        private readonly accessControlUnit: AccessControlUnit,
+    ) {}
 
     /**
      * Construct and initialize access control for the `MjolnirAppService`.
@@ -59,7 +57,7 @@ export class AccessControl {
         const accessControlList = new PolicyList(
             accessControlListId,
             Permalinks.forRoom(accessControlListId),
-            bridge.getBot().getClient()
+            bridge.getBot().getClient(),
         );
         const accessControlUnit = new AccessControlUnit([accessControlList]);
         await accessControlList.updateList();
@@ -77,7 +75,11 @@ export class AccessControl {
     }
 
     public async allow(mxid: string): Promise<void> {
-        await this.accessControlList.createPolicy(EntityType.RULE_USER, Recommendation.Allow, mxid);
+        await this.accessControlList.createPolicy(
+            EntityType.RULE_USER,
+            Recommendation.Allow,
+            mxid,
+        );
     }
 
     public async remove(mxid: string): Promise<void> {

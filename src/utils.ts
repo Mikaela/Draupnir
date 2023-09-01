@@ -35,8 +35,8 @@ import {
 } from "matrix-bot-sdk";
 import { ClientRequest, IncomingMessage } from "http";
 import { default as parseDuration } from "parse-duration";
-import * as Sentry from '@sentry/node';
-import * as _ from '@sentry/tracing'; // Performing the import activates tracing.
+import * as Sentry from "@sentry/node";
+import * as _ from "@sentry/tracing"; // Performing the import activates tracing.
 
 import ManagementRoomOutput from "./ManagementRoomOutput";
 import { IConfig } from "./config";
@@ -52,14 +52,17 @@ parseDuration["years"] = parseDuration["year"];
 // ... and reexport it
 export { parseDuration };
 
-
 export function htmlEscape(input: string): string {
-    return input.replace(/["&<>]/g, (char: string) => ({
-        ['"'.charCodeAt(0)]: "&quot;",
-        ["&".charCodeAt(0)]: "&amp;",
-        ["<".charCodeAt(0)]: "&lt;",
-        [">".charCodeAt(0)]: "&gt;"
-    })[char.charCodeAt(0)]);
+    return input.replace(
+        /["&<>]/g,
+        (char: string) =>
+            ({
+                ['"'.charCodeAt(0)]: "&quot;",
+                ["&".charCodeAt(0)]: "&amp;",
+                ["<".charCodeAt(0)]: "&lt;",
+                [">".charCodeAt(0)]: "&gt;",
+            })[char.charCodeAt(0)],
+    );
 }
 
 export function setToArray<T>(set: Set<T>): T[] {
@@ -71,14 +74,15 @@ export function setToArray<T>(set: Set<T>): T[] {
 }
 
 export function isTrueJoinEvent(event: any): boolean {
-    const membership = event['content']['membership'] || 'join';
+    const membership = event["content"]["membership"] || "join";
     let prevMembership = "leave";
-    if (event['unsigned'] && event['unsigned']['prev_content']) {
-        prevMembership = event['unsigned']['prev_content']['membership'] || 'leave';
+    if (event["unsigned"] && event["unsigned"]["prev_content"]) {
+        prevMembership =
+            event["unsigned"]["prev_content"]["membership"] || "leave";
     }
 
     // We look at the previous membership to filter out profile changes
-    return membership === 'join' && prevMembership !== "join";
+    return membership === "join" && prevMembership !== "join";
 }
 
 /**
@@ -93,23 +97,59 @@ export function isTrueJoinEvent(event: any): boolean {
  * @param limit The number of messages to redact from most recent first. If the limit is reached then no further messages will be redacted.
  * @param noop Whether to operate in noop mode.
  */
-export async function redactUserMessagesIn(client: MatrixSendClient, managementRoom: ManagementRoomOutput, userIdOrGlob: string, targetRoomIds: string[], limit = 1000, noop = false) {
+export async function redactUserMessagesIn(
+    client: MatrixSendClient,
+    managementRoom: ManagementRoomOutput,
+    userIdOrGlob: string,
+    targetRoomIds: string[],
+    limit = 1000,
+    noop = false,
+) {
     for (const targetRoomId of targetRoomIds) {
-        await managementRoom.logMessage(LogLevel.DEBUG, "utils#redactUserMessagesIn", `Fetching sent messages for ${userIdOrGlob} in ${targetRoomId} to redact...`, targetRoomId);
+        await managementRoom.logMessage(
+            LogLevel.DEBUG,
+            "utils#redactUserMessagesIn",
+            `Fetching sent messages for ${userIdOrGlob} in ${targetRoomId} to redact...`,
+            targetRoomId,
+        );
 
         try {
-            await getMessagesByUserIn(client, userIdOrGlob, targetRoomId, limit, async (eventsToRedact) => {
-                for (const victimEvent of eventsToRedact) {
-                    await managementRoom.logMessage(LogLevel.DEBUG, "utils#redactUserMessagesIn", `Redacting ${victimEvent['event_id']} in ${targetRoomId}`, targetRoomId);
-                    if (!noop) {
-                        await client.redactEvent(targetRoomId, victimEvent['event_id']);
-                    } else {
-                        await managementRoom.logMessage(LogLevel.WARN, "utils#redactUserMessagesIn", `Tried to redact ${victimEvent['event_id']} in ${targetRoomId} but Mjolnir is running in no-op mode`, targetRoomId);
+            await getMessagesByUserIn(
+                client,
+                userIdOrGlob,
+                targetRoomId,
+                limit,
+                async (eventsToRedact) => {
+                    for (const victimEvent of eventsToRedact) {
+                        await managementRoom.logMessage(
+                            LogLevel.DEBUG,
+                            "utils#redactUserMessagesIn",
+                            `Redacting ${victimEvent["event_id"]} in ${targetRoomId}`,
+                            targetRoomId,
+                        );
+                        if (!noop) {
+                            await client.redactEvent(
+                                targetRoomId,
+                                victimEvent["event_id"],
+                            );
+                        } else {
+                            await managementRoom.logMessage(
+                                LogLevel.WARN,
+                                "utils#redactUserMessagesIn",
+                                `Tried to redact ${victimEvent["event_id"]} in ${targetRoomId} but Mjolnir is running in no-op mode`,
+                                targetRoomId,
+                            );
+                        }
                     }
-                }
-            });
+                },
+            );
         } catch (error) {
-            await managementRoom.logMessage(LogLevel.ERROR, "utils#redactUserMessagesIn", `Error while trying to redact messages for ${userIdOrGlob} in ${targetRoomId}: ${error}`, targetRoomId);
+            await managementRoom.logMessage(
+                LogLevel.ERROR,
+                "utils#redactUserMessagesIn",
+                `Error while trying to redact messages for ${userIdOrGlob} in ${targetRoomId}: ${error}`,
+                targetRoomId,
+            );
         }
     }
 }
@@ -130,11 +170,17 @@ export async function redactUserMessagesIn(client: MatrixSendClient, managementR
  * The callback will only be called if there are any relevant events.
  * @returns {Promise<void>} Resolves when either: the limit has been reached, no relevant events could be found or there is no more timeline to paginate.
  */
-export async function getMessagesByUserIn(client: MatrixSendClient, sender: string, roomId: string, limit: number, cb: (events: any[]) => void): Promise<void> {
+export async function getMessagesByUserIn(
+    client: MatrixSendClient,
+    sender: string,
+    roomId: string,
+    limit: number,
+    cb: (events: any[]) => void,
+): Promise<void> {
     const isGlob = sender.includes("*");
     const roomEventFilter = {
         rooms: [roomId],
-        ... isGlob ? {} : {senders: [sender]}
+        ...(isGlob ? {} : { senders: [sender] }),
     };
 
     const matcher = new MatrixGlob(sender);
@@ -156,9 +202,9 @@ export async function getMessagesByUserIn(client: MatrixSendClient, sender: stri
      * The `start` is a token for the beginning of the `chunk` (where the most recent events are).
      */
     interface BackfillResponse {
-        chunk?: any[],
-        end?: string,
-        start: string
+        chunk?: any[];
+        end?: string;
+        start: string;
     }
 
     /**
@@ -167,14 +213,18 @@ export async function getMessagesByUserIn(client: MatrixSendClient, sender: stri
      * if `null`, start from the most recent point in the timeline.
      * @returns The response part of the `/messages` API, see `BackfillResponse`.
      */
-    async function backfill(from: string|null): Promise<BackfillResponse> {
+    async function backfill(from: string | null): Promise<BackfillResponse> {
         const qs = {
             filter: JSON.stringify(roomEventFilter),
             dir: "b",
-            ... from ? { from } : {}
+            ...(from ? { from } : {}),
         };
         LogService.info("utils", "Backfilling with token: " + from);
-        return client.doRequest("GET", `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages`, qs);
+        return client.doRequest(
+            "GET",
+            `/_matrix/client/v3/rooms/${encodeURIComponent(roomId)}/messages`,
+            qs,
+        );
     }
 
     let processed = 0;
@@ -189,18 +239,18 @@ export async function getMessagesByUserIn(client: MatrixSendClient, sender: stri
             if (processed >= limit) return messages; // we have provided enough events.
             processed++;
 
-            if (testUser(event['sender'])) messages.push(event);
+            if (testUser(event["sender"])) messages.push(event);
         }
         return messages;
     }
     // We check that we have the token because rooms/messages is not required to provide one
     // and will not provide one when there is no more history to paginate.
-    let token: string|null = null;
+    let token: string | null = null;
     do {
         const bfMessages: BackfillResponse = await backfill(token);
-        const previousToken: string|null = token;
-        token = bfMessages['end'] ?? null;
-        const events = filterEvents(bfMessages['chunk'] || []);
+        const previousToken: string | null = token;
+        token = bfMessages["end"] ?? null;
+        const events = filterEvents(bfMessages["chunk"] || []);
         // If we are using a glob, there may be no relevant events in this chunk.
         if (events.length > 0) {
             await cb(events);
@@ -210,10 +260,13 @@ export async function getMessagesByUserIn(client: MatrixSendClient, sender: stri
         // and `token` can also be 'null' as we have paginated the entire timeline, but there would be unprocessed events in the
         // chunk that was returned in this request.
         if (previousToken === token) {
-            LogService.debug("utils", "Backfill returned same end token - returning early.");
+            LogService.debug(
+                "utils",
+                "Backfill returned same end token - returning early.",
+            );
             return;
         }
-    } while (token && processed < limit)
+    } while (token && processed < limit);
 }
 
 let isMatrixClientPatchedForConciseExceptions = false;
@@ -224,7 +277,7 @@ let isMatrixClientPatchedForConciseExceptions = false;
 LogService.muteModule("MatrixHttpClient");
 
 function isMatrixError(path: string): boolean {
-    return /^\/_matrix/.test(path)
+    return /^\/_matrix/.test(path);
 }
 
 /**
@@ -249,94 +302,109 @@ function patchMatrixClientForConciseExceptions() {
         // Store an error early, to maintain *some* semblance of stack.
         // We'll only throw the error if there is one.
         let error = new Error("STACK CAPTURE");
-        originalRequestFn(params, function conciseExceptionRequestFn(
-            err: { [key: string]: unknown }, response: { [key: string]: any }, resBody: unknown
-        ) {
-            if (!err && (response?.statusCode < 200 || response?.statusCode >= 300)) {
-                // Normally, converting HTTP Errors into rejections is done by the caller
-                // of `requestFn` within matrix-bot-sdk. However, this always ends up rejecting
-                // with an `IncomingMessage` - exactly what we wish to avoid here.
-                err = response;
+        originalRequestFn(
+            params,
+            function conciseExceptionRequestFn(
+                err: { [key: string]: unknown },
+                response: { [key: string]: any },
+                resBody: unknown,
+            ) {
+                if (
+                    !err &&
+                    (response?.statusCode < 200 || response?.statusCode >= 300)
+                ) {
+                    // Normally, converting HTTP Errors into rejections is done by the caller
+                    // of `requestFn` within matrix-bot-sdk. However, this always ends up rejecting
+                    // with an `IncomingMessage` - exactly what we wish to avoid here.
+                    err = response;
 
-                // Safety note: In the calling code within matrix-bot-sdk, if we return
-                // an IncomingMessage as an error, we end up logging an unredacted response,
-                // which may include tokens, passwords, etc. This could be a grave privacy
-                // leak. The matrix-bot-sdk typically handles this by sanitizing the data
-                // before logging it but, by converting the HTTP Error into a rejection
-                // earlier than expected by the matrix-bot-sdk, we skip this step of
-                // sanitization.
-                //
-                // However, since the error we're creating is an `IncomingMessage`, we
-                // rewrite it into an `Error` ourselves in this function. Our `Error`
-                // is even more sanitized (we only include the URL, HTTP method and
-                // the error response) so we are NOT causing a privacy leak.
+                    // Safety note: In the calling code within matrix-bot-sdk, if we return
+                    // an IncomingMessage as an error, we end up logging an unredacted response,
+                    // which may include tokens, passwords, etc. This could be a grave privacy
+                    // leak. The matrix-bot-sdk typically handles this by sanitizing the data
+                    // before logging it but, by converting the HTTP Error into a rejection
+                    // earlier than expected by the matrix-bot-sdk, we skip this step of
+                    // sanitization.
+                    //
+                    // However, since the error we're creating is an `IncomingMessage`, we
+                    // rewrite it into an `Error` ourselves in this function. Our `Error`
+                    // is even more sanitized (we only include the URL, HTTP method and
+                    // the error response) so we are NOT causing a privacy leak.
+                    if (!(err instanceof IncomingMessage)) {
+                        // Safety check.
+                        throw new TypeError(
+                            "Internal error: at this stage, the error should be an IncomingMessage",
+                        );
+                    }
+                }
                 if (!(err instanceof IncomingMessage)) {
-                    // Safety check.
-                    throw new TypeError("Internal error: at this stage, the error should be an IncomingMessage");
+                    // In most cases, we're happy with the result.
+                    return cb(err, response, resBody);
                 }
-            }
-            if (!(err instanceof IncomingMessage)) {
-                // In most cases, we're happy with the result.
-                return cb(err, response, resBody);
-            }
-            // However, MatrixClient has a tendency of throwing
-            // instances of `IncomingMessage` instead of instances
-            // of `Error`. The former take ~800 lines of log and
-            // provide no stack trace, which makes them typically
-            // useless.
-            const method: string | undefined = err.method
-                ? err.method
-                : "req" in err && err.req instanceof ClientRequest
-                ? err.req.method
-                : params.method;
-            const path: string = err.url
-                ? err.url
-                : "req" in err && err.req instanceof ClientRequest
-                ? err.req.path
-                : params.uri ?? '';
-            let body: unknown = null;
-            if ("body" in err) {
-                body = err.body;
-            }
-            // Calling code may use `body` to check for errors, so let's
-            // make sure that we're providing it.
-            if (typeof body === 'string') {
-                try {
-                    body = JSON.parse(body, jsonReviver);
-                } catch (ex) {
-                    // Not JSON.
+                // However, MatrixClient has a tendency of throwing
+                // instances of `IncomingMessage` instead of instances
+                // of `Error`. The former take ~800 lines of log and
+                // provide no stack trace, which makes them typically
+                // useless.
+                const method: string | undefined = err.method
+                    ? err.method
+                    : "req" in err && err.req instanceof ClientRequest
+                    ? err.req.method
+                    : params.method;
+                const path: string = err.url
+                    ? err.url
+                    : "req" in err && err.req instanceof ClientRequest
+                    ? err.req.path
+                    : params.uri ?? "";
+                let body: unknown = null;
+                if ("body" in err) {
+                    body = err.body;
                 }
-            }
-            let message = `Error during MatrixClient request ${method} ${path}: ${err.statusCode} ${err.statusMessage} -- ${JSON.stringify(body)}`;
-            error.message = message;
-            if (body) {
-                // Define the property but don't make it visible during logging.
-                Object.defineProperty(error, "body", {
-                    value: body,
-                    enumerable: false,
-                });
-            }
-            // Calling code may use `statusCode` to check for errors, so let's
-            // make sure that we're providing it.
-            if ("statusCode" in err) {
-                // Define the property but don't make it visible during logging.
-                Object.defineProperty(error, "statusCode", {
-                    value: err.statusCode,
-                    enumerable: false,
-                });
-            }
-            // matrix-appservice-bridge depends on errors being matrix-bot-sdk's MatrixError.
-            // Since https://github.com/turt2live/matrix-bot-sdk/blob/836c2da7145668b20af7e0d75094b6162164f3dc/src/http.ts#L109
-            // we wrote this, matrix-bot-sdk has updated so that there is now a MatrixError that is thrown
-            // when there are errors in the response.
-            if (isMatrixError(path)) {
-                const matrixError = new MatrixError(body as any, err.statusCode as any);
-                matrixError.stack = error.stack;
-                return cb(matrixError, response, resBody)
-            } else {
-                return cb(error, response, resBody);
-            }
-        })
+                // Calling code may use `body` to check for errors, so let's
+                // make sure that we're providing it.
+                if (typeof body === "string") {
+                    try {
+                        body = JSON.parse(body, jsonReviver);
+                    } catch (ex) {
+                        // Not JSON.
+                    }
+                }
+                let message = `Error during MatrixClient request ${method} ${path}: ${
+                    err.statusCode
+                } ${err.statusMessage} -- ${JSON.stringify(body)}`;
+                error.message = message;
+                if (body) {
+                    // Define the property but don't make it visible during logging.
+                    Object.defineProperty(error, "body", {
+                        value: body,
+                        enumerable: false,
+                    });
+                }
+                // Calling code may use `statusCode` to check for errors, so let's
+                // make sure that we're providing it.
+                if ("statusCode" in err) {
+                    // Define the property but don't make it visible during logging.
+                    Object.defineProperty(error, "statusCode", {
+                        value: err.statusCode,
+                        enumerable: false,
+                    });
+                }
+                // matrix-appservice-bridge depends on errors being matrix-bot-sdk's MatrixError.
+                // Since https://github.com/turt2live/matrix-bot-sdk/blob/836c2da7145668b20af7e0d75094b6162164f3dc/src/http.ts#L109
+                // we wrote this, matrix-bot-sdk has updated so that there is now a MatrixError that is thrown
+                // when there are errors in the response.
+                if (isMatrixError(path)) {
+                    const matrixError = new MatrixError(
+                        body as any,
+                        err.statusCode as any,
+                    );
+                    matrixError.stack = error.stack;
+                    return cb(matrixError, response, resBody);
+                } else {
+                    return cb(error, response, resBody);
+                }
+            },
+        );
     });
     isMatrixClientPatchedForConciseExceptions = true;
 }
@@ -364,46 +432,69 @@ function patchMatrixClientForRetry() {
         let attempt = 1;
         numberOfConcurrentRequests += 1;
         if (TRACE_CONCURRENT_REQUESTS) {
-            console.trace("Current number of concurrent requests", numberOfConcurrentRequests);
+            console.trace(
+                "Current number of concurrent requests",
+                numberOfConcurrentRequests,
+            );
         }
         try {
             while (true) {
                 try {
                     let result: any[] = await new Promise((resolve, reject) => {
-                        originalRequestFn(params, function requestFnWithRetry(
-                            err: { [key: string]: any }, response: { [key: string]: unknown }, resBody: unknown
-                        ) {
-                            // Note: There is no data race on `attempt` as we `await` before continuing
-                            // to the next iteration of the loop.
-                            if (attempt < MAX_REQUEST_ATTEMPTS && err?.body?.errcode === 'M_LIMIT_EXCEEDED') {
-                                // We need to retry.
-                                reject(err);
-                            } else {
-                                if (attempt >= MAX_REQUEST_ATTEMPTS) {
-                                    LogService.warn('Mjolnir.client', `Retried request ${params.method} ${params.uri} ${attempt} times, giving up.`);
+                        originalRequestFn(
+                            params,
+                            function requestFnWithRetry(
+                                err: { [key: string]: any },
+                                response: { [key: string]: unknown },
+                                resBody: unknown,
+                            ) {
+                                // Note: There is no data race on `attempt` as we `await` before continuing
+                                // to the next iteration of the loop.
+                                if (
+                                    attempt < MAX_REQUEST_ATTEMPTS &&
+                                    err?.body?.errcode === "M_LIMIT_EXCEEDED"
+                                ) {
+                                    // We need to retry.
+                                    reject(err);
+                                } else {
+                                    if (attempt >= MAX_REQUEST_ATTEMPTS) {
+                                        LogService.warn(
+                                            "Mjolnir.client",
+                                            `Retried request ${params.method} ${params.uri} ${attempt} times, giving up.`,
+                                        );
+                                    }
+                                    // No need-to-retry error? Lucky us!
+                                    // Note that this may very well be an error, just not
+                                    // one we need to retry.
+                                    resolve([err, response, resBody]);
                                 }
-                                // No need-to-retry error? Lucky us!
-                                // Note that this may very well be an error, just not
-                                // one we need to retry.
-                                resolve([err, response, resBody]);
-                            }
-                        });
+                            },
+                        );
                     });
                     // This is our final result.
                     // Pass result, whether success or error.
                     return cb(...result);
                 } catch (err) {
                     // Need to retry.
-                    let retryAfterMs = attempt * attempt * REQUEST_RETRY_BASE_DURATION_MS;
+                    let retryAfterMs =
+                        attempt * attempt * REQUEST_RETRY_BASE_DURATION_MS;
                     if ("retry_after_ms" in err) {
                         try {
-                            retryAfterMs = Number.parseInt(err.retry_after_ms, 10);
+                            retryAfterMs = Number.parseInt(
+                                err.retry_after_ms,
+                                10,
+                            );
                         } catch (ex) {
                             // Use default value.
                         }
                     }
-                    LogService.debug("Mjolnir.client", `Waiting ${retryAfterMs}ms before retrying ${params.method} ${params.uri}`);
-                    await new Promise(resolve => setTimeout(resolve, retryAfterMs));
+                    LogService.debug(
+                        "Mjolnir.client",
+                        `Waiting ${retryAfterMs}ms before retrying ${params.method} ${params.uri}`,
+                    );
+                    await new Promise((resolve) =>
+                        setTimeout(resolve, retryAfterMs),
+                    );
                     attempt += 1;
                 }
             }
@@ -417,7 +508,7 @@ function patchMatrixClientForRetry() {
 let isMatrixClientPatchedForPrototypePollution = false;
 
 function jsonReviver(key: string, value: any): any {
-    if (key === '__proto__' || key === 'constructor') {
+    if (key === "__proto__" || key === "constructor") {
         return undefined;
     } else {
         return value;
@@ -435,28 +526,33 @@ function patchMatrixClientForPrototypePollution() {
     }
     const originalRequestFn = getRequestFn();
     setRequestFn((params: { [k: string]: any }, cb: any) => {
-        originalRequestFn(params, function conciseExceptionRequestFn(
-            error: { [key: string]: any }, response: { [key: string]: any }, resBody: unknown
-        ) {
-            // https://github.com/turt2live/matrix-bot-sdk/blob/c7d16776502c26bbb547a3d667ec92eb50e7026c/src/http.ts#L77-L101
-            // bring forwards this step and do it safely.
-            if (typeof resBody === 'string') {
-                try {
-                    resBody = JSON.parse(resBody, jsonReviver);
-                } catch (e) {
-                    // we don't care if we fail to parse the JSON as it probably isn't JSON.
+        originalRequestFn(
+            params,
+            function conciseExceptionRequestFn(
+                error: { [key: string]: any },
+                response: { [key: string]: any },
+                resBody: unknown,
+            ) {
+                // https://github.com/turt2live/matrix-bot-sdk/blob/c7d16776502c26bbb547a3d667ec92eb50e7026c/src/http.ts#L77-L101
+                // bring forwards this step and do it safely.
+                if (typeof resBody === "string") {
+                    try {
+                        resBody = JSON.parse(resBody, jsonReviver);
+                    } catch (e) {
+                        // we don't care if we fail to parse the JSON as it probably isn't JSON.
+                    }
                 }
-            }
 
-            if (typeof response?.body === 'string') {
-                try {
-                    response.body = JSON.parse(response.body, jsonReviver);
-                } catch (e) {
-                    // we don't care if we fail to parse the JSON as it probably isn't JSON.
+                if (typeof response?.body === "string") {
+                    try {
+                        response.body = JSON.parse(response.body, jsonReviver);
+                    } catch (e) {
+                        // we don't care if we fail to parse the JSON as it probably isn't JSON.
+                    }
                 }
-            }
-            return cb(error, response, resBody);
-        })
+                return cb(error, response, resBody);
+            },
+        );
     });
     isMatrixClientPatchedForPrototypePollution = true;
 }

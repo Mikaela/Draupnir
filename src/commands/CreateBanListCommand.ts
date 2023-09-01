@@ -32,18 +32,25 @@ import { Permalinks } from "./interface-manager/Permalinks";
 import { MatrixRoomReference } from "./interface-manager/MatrixRoomReference";
 
 // !mjolnir list create <shortcode> <alias localpart>
-export async function execCreateListCommand(roomId: string, event: any, mjolnir: Mjolnir, parts: string[]) {
+export async function execCreateListCommand(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+    parts: string[],
+) {
     const shortcode = parts[3];
     const aliasLocalpart = parts[4];
 
     const listRoomId = await PolicyList.createList(
         mjolnir.client,
         shortcode,
-        [event['sender']],
-        { room_alias_name: aliasLocalpart }
+        [event["sender"]],
+        { room_alias_name: aliasLocalpart },
     );
 
-    const roomRef = MatrixRoomReference.fromPermalink(Permalinks.forRoom(listRoomId));
+    const roomRef = MatrixRoomReference.fromPermalink(
+        Permalinks.forRoom(listRoomId),
+    );
     await mjolnir.policyListManager.watchList(roomRef);
     await mjolnir.addProtectedRoom(listRoomId);
 

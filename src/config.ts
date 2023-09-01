@@ -60,7 +60,7 @@ export interface IConfig {
     managementRoom: string;
     verboseLogging: boolean;
     logLevel: "DEBUG" | "INFO" | "WARN" | "ERROR";
-    logMutedModules: string[],
+    logMutedModules: string[];
     syncOnStartup: boolean;
     verifyPermissionsOnStartup: boolean;
     noop: boolean;
@@ -81,15 +81,15 @@ export interface IConfig {
     displayReports: boolean;
     admin?: {
         enableMakeRoomAdminCommand?: boolean;
-    }
+    };
     commands: {
         allowNoPrefix: boolean;
         additionalPrefixes: string[];
         confirmWildcardBan: boolean;
         features: string[];
         ban: {
-            defaultReasons: string[]
-        }
+            defaultReasons: string[];
+        };
     };
     protections: {
         wordlist: {
@@ -123,11 +123,11 @@ export interface IConfig {
         address: string;
         abuseReporting: {
             enabled: boolean;
-        }
+        };
         ruleServer?: {
             enabled: boolean;
-        }
-    }
+        };
+    };
 
     /**
      * Config options only set at runtime. Try to avoid using the objects
@@ -148,13 +148,13 @@ const defaultConfig: IConfig = {
         password: "",
     },
     dataPath: "/data/storage",
-    acceptInvitesFromSpace: '!noop:example.org',
+    acceptInvitesFromSpace: "!noop:example.org",
     autojoinOnlyIfManager: true,
     recordIgnoredInvites: false,
     managementRoom: "!noop:example.org",
     verboseLogging: false,
     logLevel: "INFO",
-    logMutedModules: ['MatrixHttpClient', 'MatrixClientLite'],
+    logMutedModules: ["MatrixHttpClient", "MatrixClientLite"],
     syncOnStartup: true,
     verifyPermissionsOnStartup: true,
     noop: false,
@@ -169,23 +169,16 @@ const defaultConfig: IConfig = {
         allowNoPrefix: false,
         additionalPrefixes: ["draupnir"],
         confirmWildcardBan: true,
-        features: [
-            "synapse admin",
-        ],
+        features: ["synapse admin"],
         ban: {
-            defaultReasons: [
-                "spam",
-                "brigading",
-                "harassment",
-                "disagreement",
-            ]
-        }
+            defaultReasons: ["spam", "brigading", "harassment", "disagreement"],
+        },
     },
     protections: {
         wordlist: {
             words: [],
-            minutesBeforeTrusting: 20
-        }
+            minutesBeforeTrusting: 20,
+        },
     },
     health: {
         healthz: {
@@ -210,8 +203,7 @@ const defaultConfig: IConfig = {
     },
 
     // Needed to make the interface happy.
-    RUNTIME: {
-    },
+    RUNTIME: {},
 };
 
 export function getDefaultConfig(): IConfig {
@@ -223,8 +215,10 @@ export function getDefaultConfig(): IConfig {
  * @param argv An arguments vector sourced from `process.argv`.
  * @returns The path if one was provided or undefined.
  */
-function configPathFromArguments(argv: string[]): undefined|string {
-    const configOptionIndex = argv.findIndex(arg => arg === "--draupnir-config");
+function configPathFromArguments(argv: string[]): undefined | string {
+    const configOptionIndex = argv.findIndex(
+        (arg) => arg === "--draupnir-config",
+    );
     if (configOptionIndex > 0) {
         const configOptionPath = argv.at(configOptionIndex + 1);
         if (!configOptionPath) {
@@ -243,7 +237,11 @@ export function read(): IConfig {
         const parsed = load(content);
         return Config.util.extendDeep({}, defaultConfig, parsed);
     } else {
-        const config = Config.util.extendDeep({}, defaultConfig, Config.util.toObject()) as IConfig;
+        const config = Config.util.extendDeep(
+            {},
+            defaultConfig,
+            Config.util.toObject(),
+        ) as IConfig;
         return config;
     }
 }
@@ -269,15 +267,24 @@ export function getProvisionedMjolnirConfig(managementRoomId: string): IConfig {
         "backgroundDelayMS",
     ];
     const configTemplate = read(); // we use the standard bot config as a template for every provisioned mjolnir.
-    const unusedKeys = Object.keys(configTemplate).filter(key => !allowedKeys.includes(key));
+    const unusedKeys = Object.keys(configTemplate).filter(
+        (key) => !allowedKeys.includes(key),
+    );
     if (unusedKeys.length > 0) {
-        LogService.warn("config", "The config provided for provisioned mjolnirs contains keys which are not used by the appservice.", unusedKeys);
+        LogService.warn(
+            "config",
+            "The config provided for provisioned mjolnirs contains keys which are not used by the appservice.",
+            unusedKeys,
+        );
     }
     const config = Config.util.extendDeep(
         getDefaultConfig(),
         allowedKeys.reduce((existingConfig: any, key: string) => {
-            return { ...existingConfig, [key]: configTemplate[key as keyof IConfig] }
-        }, {})
+            return {
+                ...existingConfig,
+                [key]: configTemplate[key as keyof IConfig],
+            };
+        }, {}),
     );
 
     config.managementRoom = managementRoomId;
@@ -287,7 +294,9 @@ export function getProvisionedMjolnirConfig(managementRoomId: string): IConfig {
 
 export const PACKAGE_JSON = (() => {
     try {
-        return JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8'));
+        return JSON.parse(
+            fs.readFileSync(path.join(__dirname, "../package.json"), "utf-8"),
+        );
     } catch (e) {
         LogService.error("config", "Could not read Draupnir package.json", e);
         return {};
@@ -296,9 +305,14 @@ export const PACKAGE_JSON = (() => {
 
 export const SOFTWARE_VERSION = (() => {
     let versionFile;
-    const defaultText = PACKAGE_JSON.version ?? "A version was either not provided when building Draupnir or could not be read.";
+    const defaultText =
+        PACKAGE_JSON.version ??
+        "A version was either not provided when building Draupnir or could not be read.";
     try {
-        versionFile = fs.readFileSync(path.join(__dirname, '../version.txt'), 'utf-8');
+        versionFile = fs.readFileSync(
+            path.join(__dirname, "../version.txt"),
+            "utf-8",
+        );
     } catch (e) {
         LogService.error("config", "Could not read Draupnir version", e);
         versionFile = defaultText;

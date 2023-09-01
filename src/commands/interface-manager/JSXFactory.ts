@@ -3,13 +3,24 @@
  * All rights reserved.
  */
 
-import { DocumentNode, LeafNode, makeDocumentNode, makeLeafNode, NodeTag, TextNode } from "./DeadDocument";
+import {
+    DocumentNode,
+    LeafNode,
+    makeDocumentNode,
+    makeLeafNode,
+    NodeTag,
+    TextNode,
+} from "./DeadDocument";
 import { findPresentationRenderer } from "./DeadDocumentPresentation";
 import { presentationTypeOf } from "./ParameterParsing";
 
-type rawJSX = DocumentNode|LeafNode|string|number|Array<rawJSX>;
+type rawJSX = DocumentNode | LeafNode | string | number | Array<rawJSX>;
 
-export function JSXFactory(tag: NodeTag, properties: any, ...rawChildren: (DocumentNode|LeafNode|string)[]) {
+export function JSXFactory(
+    tag: NodeTag,
+    properties: any,
+    ...rawChildren: (DocumentNode | LeafNode | string)[]
+) {
     const node = makeDocumentNode(tag);
     if (properties) {
         for (const [key, value] of Object.entries(properties)) {
@@ -17,16 +28,22 @@ export function JSXFactory(tag: NodeTag, properties: any, ...rawChildren: (Docum
         }
     }
     const ensureChild = (rawChild: rawJSX) => {
-        if (typeof rawChild === 'string') {
+        if (typeof rawChild === "string") {
             makeLeafNode<TextNode>(NodeTag.TextNode, node, rawChild);
-        } else if (typeof rawChild === 'number') {
-            makeLeafNode<TextNode>(NodeTag.TextNode, node, (rawChild as number).toString());
+        } else if (typeof rawChild === "number") {
+            makeLeafNode<TextNode>(
+                NodeTag.TextNode,
+                node,
+                (rawChild as number).toString(),
+            );
         } else if (Array.isArray(rawChild)) {
             rawChild.forEach(ensureChild);
-        // Then it's a DocumentNode|LeafNode
-        } else if (typeof rawChild.leafNode === 'boolean') {
+            // Then it's a DocumentNode|LeafNode
+        } else if (typeof rawChild.leafNode === "boolean") {
             if (rawChild.tag === NodeTag.Fragment) {
-                (rawChild as DocumentNode).getChildren().forEach(node.addChild, node);
+                (rawChild as DocumentNode)
+                    .getChildren()
+                    .forEach(node.addChild, node);
             } else {
                 node.addChild(rawChild);
             }
@@ -36,14 +53,15 @@ export function JSXFactory(tag: NodeTag, properties: any, ...rawChildren: (Docum
                 const renderer = findPresentationRenderer(presentationType);
                 node.addChild(renderer(rawChild));
             } else {
-                throw new TypeError(`Unexpected raw child ${JSON.stringify(rawChild)}`);
+                throw new TypeError(
+                    `Unexpected raw child ${JSON.stringify(rawChild)}`,
+                );
             }
         }
-    }
+    };
     rawChildren.forEach(ensureChild);
     return node;
 }
-
 
 namespace JSXFactory {
     export interface IntrinsicElements {

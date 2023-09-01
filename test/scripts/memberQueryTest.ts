@@ -16,7 +16,10 @@ const { MatrixClient } = require("matrix-bot-sdk");
  */
 //
 const accessToken = "redacted";
-const client = new MatrixClient("https://matrix-client.matrix.org", accessToken);
+const client = new MatrixClient(
+    "https://matrix-client.matrix.org",
+    accessToken,
+);
 const roomId = "!OGEhHVWSdvArJzumhm:matrix.org";
 
 enum MemberFetchMethod {
@@ -25,16 +28,21 @@ enum MemberFetchMethod {
     State = "/state",
 }
 
-const shuffledMethods =
-    [MemberFetchMethod.JoinedMembers, MemberFetchMethod.Members, MemberFetchMethod.State]
-        .reduce((acc: MemberFetchMethod[], method: MemberFetchMethod) => {
-            return [...acc,  ...[...Array(5)].map(_ => method)]
-        }, []);
+const shuffledMethods = [
+    MemberFetchMethod.JoinedMembers,
+    MemberFetchMethod.Members,
+    MemberFetchMethod.State,
+].reduce((acc: MemberFetchMethod[], method: MemberFetchMethod) => {
+    return [...acc, ...[...Array(5)].map((_) => method)];
+}, []);
 
 // shuffle https://stackoverflow.com/a/12646864
 for (let i = shuffledMethods.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [shuffledMethods[i], shuffledMethods[j]] = [shuffledMethods[j], shuffledMethods[i]];
+    [shuffledMethods[i], shuffledMethods[j]] = [
+        shuffledMethods[j],
+        shuffledMethods[i],
+    ];
 }
 
 async function fetchStateWithMethod(method: MemberFetchMethod) {
@@ -42,7 +50,10 @@ async function fetchStateWithMethod(method: MemberFetchMethod) {
         case MemberFetchMethod.JoinedMembers:
             return await client.getJoinedRoomMembers(roomId);
         case MemberFetchMethod.Members:
-            return await client.getRoomMembers(roomId, undefined, undefined, ['leave', 'ban']);
+            return await client.getRoomMembers(roomId, undefined, undefined, [
+                "leave",
+                "ban",
+            ]);
         case MemberFetchMethod.State:
             return await client.getRoomState(roomId);
         default:
@@ -53,13 +64,13 @@ async function fetchStateWithMethod(method: MemberFetchMethod) {
 const times = new Map<MemberFetchMethod, number[]>([
     [MemberFetchMethod.JoinedMembers, []],
     [MemberFetchMethod.Members, []],
-    [MemberFetchMethod.State, []]
+    [MemberFetchMethod.State, []],
 ]);
 
 function addTime(method: MemberFetchMethod, time: number) {
     const entry = times.get(method);
     if (entry === undefined) {
-        throw new TypeError()
+        throw new TypeError();
     }
     entry.push(time);
 }
@@ -69,12 +80,12 @@ function getTimes(method: MemberFetchMethod) {
 }
 
 // https://stackoverflow.com/a/70806192
-function calculateMedian (arr: number[]): number | undefined {
+function calculateMedian(arr: number[]): number | undefined {
     if (!arr.length) return undefined;
     const s = [...arr].sort((a, b) => a - b);
     const mid = Math.floor(s.length / 2);
-    return s.length % 2 === 0 ? ((s[mid - 1] + s[mid]) / 2) : s[mid];
-};
+    return s.length % 2 === 0 ? (s[mid - 1] + s[mid]) / 2 : s[mid];
+}
 
 (async () => {
     for (const method of shuffledMethods) {
@@ -84,11 +95,19 @@ function calculateMedian (arr: number[]): number | undefined {
         addTime(method, elapsedMs);
     }
 
-    for (const method of [MemberFetchMethod.JoinedMembers, MemberFetchMethod.Members, MemberFetchMethod.State]) {
+    for (const method of [
+        MemberFetchMethod.JoinedMembers,
+        MemberFetchMethod.Members,
+        MemberFetchMethod.State,
+    ]) {
         const times = getTimes(method)!;
         const sum = times.reduce((a, b) => a + b, 0);
-        const mean = (sum / times.length) || 0;
+        const mean = sum / times.length || 0;
         const median = calculateMedian(times);
-        console.log(`${method}: total time elapsed ${sum / 1000}seconds, mean time ${mean}ms, median time ${median}ms`);
+        console.log(
+            `${method}: total time elapsed ${
+                sum / 1000
+            }seconds, mean time ${mean}ms, median time ${median}ms`,
+        );
     }
 })();

@@ -1,6 +1,7 @@
 ## Context for developing Draupnir
 
 #### And also context that is essential if you are developing anything
+
 that uses Policy Lists.
 
 ### Sync loop
@@ -73,19 +74,19 @@ parts. You should read specification about policy lists
 after this introduction.
 
 - `entity`: This is the target of a given policy such as a user that
-is being banned.
+  is being banned.
 
 - `recommendation`: This is basically what the policy recommends that
-the "consumer" does. The only specified recommendation in the matrix
-spec is `m.ban`. How `m.ban` is interpreted is even left to
-interpretation, as it depends on what the "consumer" of the policy is.
-In Draupnir's case, it usually means to ban the user from any
-protected room.
+  the "consumer" does. The only specified recommendation in the matrix
+  spec is `m.ban`. How `m.ban` is interpreted is even left to
+  interpretation, as it depends on what the "consumer" of the policy is.
+  In Draupnir's case, it usually means to ban the user from any
+  protected room.
 
 - `reason`: This field is used by the `m.ban` recommendation as a
-place to replicate the "reason" field found when banning a user
-at the room level. It's not clear whether the field will be
-appropriate for all uses of `recommendation`.
+  place to replicate the "reason" field found when banning a user
+  at the room level. It's not clear whether the field will be
+  appropriate for all uses of `recommendation`.
 
 Currently there are only three state events that are defined by the
 spec and these were chosen to be intrinsically tied to the entities
@@ -122,8 +123,8 @@ begin synchronising policies with with the protected rooms.
 Draupnir starts synchronising rooms by visiting the most recently
 active room first.
 
-
-[^full-state]: matrix-bot-sdk could be modified to sync with
-`full_state` set to true. This has been
-[attempted](https://github.com/turt2live/matrix-bot-sdk/pull/215)
-but the maintainer of the matrix-bot-sdk is opposed to the idea.
+[^full-state]:
+    matrix-bot-sdk could be modified to sync with
+    `full_state` set to true. This has been
+    [attempted](https://github.com/turt2live/matrix-bot-sdk/pull/215)
+    but the maintainer of the matrix-bot-sdk is opposed to the idea.

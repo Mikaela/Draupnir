@@ -25,10 +25,19 @@ limitations under the License.
  * are NOT distributed, contributed, committed, or licensed under the Apache License.
  */
 
-import { defineInterfaceCommand, findTableCommand } from "./interface-manager/InterfaceCommand";
-import { findPresentationType, parameters } from "./interface-manager/ParameterParsing";
+import {
+    defineInterfaceCommand,
+    findTableCommand,
+} from "./interface-manager/InterfaceCommand";
+import {
+    findPresentationType,
+    parameters,
+} from "./interface-manager/ParameterParsing";
 import { MjolnirContext } from "./CommandHandler";
-import { MatrixRoomID, MatrixRoomReference } from "./interface-manager/MatrixRoomReference";
+import {
+    MatrixRoomID,
+    MatrixRoomReference,
+} from "./interface-manager/MatrixRoomReference";
 import { CommandResult } from "./interface-manager/Validation";
 import { CommandException } from "./interface-manager/CommandException";
 import { defineMatrixInterfaceAdaptor } from "./interface-manager/MatrixInterfaceAdaptor";
@@ -43,20 +52,33 @@ defineInterfaceCommand({
     designator: ["rooms"],
     summary: "List all of the protected rooms.",
     parameters: parameters([]),
-    command: async function (this: MjolnirContext, _keywrods): Promise<CommandResult<string[]>> {
-        return CommandResult.Ok(this.mjolnir.protectedRoomsTracker.getProtectedRooms());
-    }
-})
+    command: async function (
+        this: MjolnirContext,
+        _keywrods,
+    ): Promise<CommandResult<string[]>> {
+        return CommandResult.Ok(
+            this.mjolnir.protectedRoomsTracker.getProtectedRooms(),
+        );
+    },
+});
 
 function renderProtectedRooms(rooms: string[]): DocumentNode {
-    return <root>
-        <details>
-            <summary><b>Protected Rooms ({rooms.length}):</b></summary>
-            <ul>
-                {rooms.map(r => <li><a href={Permalinks.forRoom(r)}>{r}</a></li>)}
-            </ul>
-        </details>
-    </root>
+    return (
+        <root>
+            <details>
+                <summary>
+                    <b>Protected Rooms ({rooms.length}):</b>
+                </summary>
+                <ul>
+                    {rooms.map((r) => (
+                        <li>
+                            <a href={Permalinks.forRoom(r)}>{r}</a>
+                        </li>
+                    ))}
+                </ul>
+            </details>
+        </root>
+    );
 }
 
 defineMatrixInterfaceAdaptor({
@@ -68,31 +90,40 @@ defineMatrixInterfaceAdaptor({
         }
         await renderMatrixAndSend(
             renderProtectedRooms(result.ok),
-            commandRoomId, event, client
+            commandRoomId,
+            event,
+            client,
         );
-    }
-})
+    },
+});
 
 defineInterfaceCommand({
     table: "mjolnir",
     designator: ["rooms", "add"],
-    summary: "Protect the room using the watched policy lists, banning users and synchronizing server ACL.",
+    summary:
+        "Protect the room using the watched policy lists, banning users and synchronizing server ACL.",
     parameters: parameters([
         {
-            name: 'room',
+            name: "room",
             acceptor: findPresentationType("MatrixRoomReference"),
-            description: 'The room to protect.'
-        }
+            description: "The room to protect.",
+        },
     ]),
-    command: async function (this: MjolnirContext, _keywords, roomRef: MatrixRoomReference): Promise<CommandResult<void>> {
+    command: async function (
+        this: MjolnirContext,
+        _keywords,
+        roomRef: MatrixRoomReference,
+    ): Promise<CommandResult<void>> {
         const roomIDOrError = await (async () => {
             try {
-                return CommandResult.Ok(await roomRef.joinClient(this.mjolnir.client));
+                return CommandResult.Ok(
+                    await roomRef.joinClient(this.mjolnir.client),
+                );
             } catch (e) {
                 return CommandException.Result<MatrixRoomID>(
                     `The homeserver that Draupnir is hosted on cannot join this room using the room reference provided.\
                     Try an alias or the "share room" button in your client to obtain a valid reference to the room.`,
-                    { exception: e }
+                    { exception: e },
                 );
             }
         })();
@@ -102,7 +133,7 @@ defineInterfaceCommand({
         await this.mjolnir.addProtectedRoom(roomIDOrError.ok.toRoomIdOrAlias());
         return CommandResult.Ok(undefined);
     },
-})
+});
 
 defineInterfaceCommand({
     table: "mjolnir",
@@ -110,26 +141,36 @@ defineInterfaceCommand({
     summary: "Stop protecting the room and leave.",
     parameters: parameters([
         {
-            name: 'room',
+            name: "room",
             acceptor: findPresentationType("MatrixRoomReference"),
-            description: 'The room to stop protecting.'
-        }
+            description: "The room to stop protecting.",
+        },
     ]),
-    command: async function (this: MjolnirContext, _keywords, roomRef: MatrixRoomReference): Promise<CommandResult<void>> {
+    command: async function (
+        this: MjolnirContext,
+        _keywords,
+        roomRef: MatrixRoomReference,
+    ): Promise<CommandResult<void>> {
         const roomID = await roomRef.resolve(this.mjolnir.client);
         await this.mjolnir.removeProtectedRoom(roomID.toRoomIdOrAlias());
         try {
             await this.mjolnir.client.leaveRoom(roomID.toRoomIdOrAlias());
         } catch (exception) {
-            return CommandException.Result(`Failed to leave ${roomRef.toPermalink()} - the room is no longer being protected, but the bot could not leave.`, { exception });
+            return CommandException.Result(
+                `Failed to leave ${roomRef.toPermalink()} - the room is no longer being protected, but the bot could not leave.`,
+                { exception },
+            );
         }
         return CommandResult.Ok(undefined);
     },
-})
+});
 
-for (const designator of [["rooms", "add"], ["rooms", "remove"]]) {
+for (const designator of [
+    ["rooms", "add"],
+    ["rooms", "remove"],
+]) {
     defineMatrixInterfaceAdaptor({
         interfaceCommand: findTableCommand("mjolnir", ...designator),
         renderer: tickCrossRenderer,
-    })
+    });
 }

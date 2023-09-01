@@ -38,16 +38,22 @@ import { PolicyListManager } from "../models/PolicyListManager";
 import { MatrixRoomReference } from "../commands/interface-manager/MatrixRoomReference";
 import { findPolicyListFromRoomReference } from "../commands/Ban";
 
-const PROPAGATION_PROMPT_LISTENER = 'ge.applied-langua.ge.draupnir.ban_propagation';
+const PROPAGATION_PROMPT_LISTENER =
+    "ge.applied-langua.ge.draupnir.ban_propagation";
 
-function makePolicyListShortcodeReferenceMap(lists: PolicyListManager): Map<string, string> {
-    return lists.lists.reduce((map, list, index) => (map.set(`${index + 1}.`, list.roomRef), map), new Map())
+function makePolicyListShortcodeReferenceMap(
+    lists: PolicyListManager,
+): Map<string, string> {
+    return lists.lists.reduce(
+        (map, list, index) => (map.set(`${index + 1}.`, list.roomRef), map),
+        new Map(),
+    );
 }
 
 // would be nice to be able to use presentation types here idk.
 interface BanPropagationMessageContext {
-    target: string,
-    reason?: string,
+    target: string;
+    reason?: string;
 }
 
 /**
@@ -60,39 +66,60 @@ interface BanPropagationMessageContext {
 async function promptBanPropagation(
     mjolnir: Mjolnir,
     event: any,
-    roomId: string
-): Promise</*event id*/string> {
-    const reactionMap = makePolicyListShortcodeReferenceMap(mjolnir.policyListManager);
-    const promptEventId = (await renderMatrixAndSend(
-        <root>The user {renderMentionPill(event["state_key"], event["content"]?.["displayname"] ?? event["state_key"])} was banned
-                in <a href={`https://matrix.to/#/${roomId}`}>{roomId}</a> by {new UserID(event["sender"])} for <code>{event["content"]?.["reason"] ?? '<no reason supplied>'}</code>.<br/>
+    roomId: string,
+): Promise</*event id*/ string> {
+    const reactionMap = makePolicyListShortcodeReferenceMap(
+        mjolnir.policyListManager,
+    );
+    const promptEventId = (
+        await renderMatrixAndSend(
+            <root>
+                The user{" "}
+                {renderMentionPill(
+                    event["state_key"],
+                    event["content"]?.["displayname"] ?? event["state_key"],
+                )}{" "}
+                was banned in{" "}
+                <a href={`https://matrix.to/#/${roomId}`}>{roomId}</a> by{" "}
+                {new UserID(event["sender"])} for{" "}
+                <code>
+                    {event["content"]?.["reason"] ?? "<no reason supplied>"}
+                </code>
+                .<br />
                 Would you like to add the ban to a policy list?
-            <ol>
-                {mjolnir.policyListManager.lists.map(list => <li>{list}</li>)}
-            </ol>
-        </root>,
-        mjolnir.managementRoomId,
-        undefined,
-        mjolnir.client,
-        mjolnir.reactionHandler.createAnnotation(
-            PROPAGATION_PROMPT_LISTENER,
-            reactionMap,
-            {
-                target: event["state_key"],
-                reason: event["content"]?.["reason"],
-            }
+                <ol>
+                    {mjolnir.policyListManager.lists.map((list) => (
+                        <li>{list}</li>
+                    ))}
+                </ol>
+            </root>,
+            mjolnir.managementRoomId,
+            undefined,
+            mjolnir.client,
+            mjolnir.reactionHandler.createAnnotation(
+                PROPAGATION_PROMPT_LISTENER,
+                reactionMap,
+                {
+                    target: event["state_key"],
+                    reason: event["content"]?.["reason"],
+                },
+            ),
         )
-    )).at(0) as string;
-    await mjolnir.reactionHandler.addReactionsToEvent(mjolnir.client, mjolnir.managementRoomId, promptEventId, reactionMap);
+    ).at(0) as string;
+    await mjolnir.reactionHandler.addReactionsToEvent(
+        mjolnir.client,
+        mjolnir.managementRoomId,
+        promptEventId,
+        reactionMap,
+    );
     return promptEventId;
 }
 
 export class BanPropagation extends Protection {
-
     settings = {};
 
     public get name(): string {
-        return 'BanPropagationProtection';
+        return "BanPropagationProtection";
     }
     public get description(): string {
         return "When you ban a user in any protected room with a client, this protection\
@@ -101,39 +128,69 @@ export class BanPropagation extends Protection {
     }
 
     public async registerProtection(mjolnir: Mjolnir): Promise<void> {
-        const listener: ReactionListener = async (key, item, context: BanPropagationMessageContext) => {
+        const listener: ReactionListener = async (
+            key,
+            item,
+            context: BanPropagationMessageContext,
+        ) => {
             try {
-                if (typeof item === 'string') {
+                if (typeof item === "string") {
                     const listRef = MatrixRoomReference.fromPermalink(item);
-                    const listResult = await findPolicyListFromRoomReference(mjolnir, listRef);
+                    const listResult = await findPolicyListFromRoomReference(
+                        mjolnir,
+                        listRef,
+                    );
                     if (listResult.isOk()) {
-                        return listResult.ok.banEntity(RULE_USER, context.target, context.reason);
+                        return listResult.ok.banEntity(
+                            RULE_USER,
+                            context.target,
+                            context.reason,
+                        );
                     } else {
-                        LogService.warn("BanPropagation", "Timed out waiting for a response to a room level ban", listResult.err);
+                        LogService.warn(
+                            "BanPropagation",
+                            "Timed out waiting for a response to a room level ban",
+                            listResult.err,
+                        );
                         return;
                     }
                 } else {
-                    throw new TypeError("The ban prompt event's reaction map is malformed.")
+                    throw new TypeError(
+                        "The ban prompt event's reaction map is malformed.",
+                    );
                 }
             } catch (e) {
-                LogService.error('BanPropagation', "Encountered an error while prompting the user for instructions to propagate a room level ban", e);
+                LogService.error(
+                    "BanPropagation",
+                    "Encountered an error while prompting the user for instructions to propagate a room level ban",
+                    e,
+                );
             }
         };
         mjolnir.reactionHandler.on(PROPAGATION_PROMPT_LISTENER, listener);
     }
 
-    public async handleEvent(mjolnir: Mjolnir, roomId: string, event: any): Promise<any> {
-        if (event['type'] !== 'm.room.member' || event['content']?.['membership'] !== 'ban') {
+    public async handleEvent(
+        mjolnir: Mjolnir,
+        roomId: string,
+        event: any,
+    ): Promise<any> {
+        if (
+            event["type"] !== "m.room.member" ||
+            event["content"]?.["membership"] !== "ban"
+        ) {
             return;
         }
-        if (mjolnir.policyListManager.lists.map(
-                list => list.rulesMatchingEntity(event['state_key'], RULE_USER)
-            ).some(rules => rules.length > 0)
+        if (
+            mjolnir.policyListManager.lists
+                .map((list) =>
+                    list.rulesMatchingEntity(event["state_key"], RULE_USER),
+                )
+                .some((rules) => rules.length > 0)
         ) {
             return; // The user is already banned.
         }
         // do not await, we don't want to block the protection manager
-        promptBanPropagation(mjolnir, event, roomId)
-
+        promptBanPropagation(mjolnir, event, roomId);
     }
 }

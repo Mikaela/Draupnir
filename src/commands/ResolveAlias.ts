@@ -30,13 +30,20 @@ import { RichReply } from "matrix-bot-sdk";
 import { htmlEscape } from "../utils";
 
 // !mjolnir resolve <alias>
-export async function execResolveCommand(roomId: string, event: any, mjolnir: Mjolnir, parts: string[]) {
+export async function execResolveCommand(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+    parts: string[],
+) {
     const toResolve = parts[2];
 
     const resolvedRoomId = await mjolnir.client.resolveRoom(toResolve);
 
     const message = `Room ID for ${toResolve} is ${resolvedRoomId}`;
-    const html = `Room ID for ${htmlEscape(toResolve)} is ${htmlEscape(resolvedRoomId)}`;
+    const html = `Room ID for ${htmlEscape(toResolve)} is ${htmlEscape(
+        resolvedRoomId,
+    )}`;
     const reply = RichReply.createFor(roomId, event, message, html);
     reply["msgtype"] = "m.notice";
     await mjolnir.client.sendMessage(roomId, reply);

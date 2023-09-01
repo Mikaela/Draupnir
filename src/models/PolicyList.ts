@@ -27,7 +27,18 @@ limitations under the License.
 
 import { LogService, RoomCreateOptions, UserID } from "matrix-bot-sdk";
 import { EventEmitter } from "events";
-import { ALL_RULE_TYPES, EntityType, ListRule, Recommendation, ROOM_RULE_TYPES, RULE_ROOM, RULE_SERVER, RULE_USER, SERVER_RULE_TYPES, USER_RULE_TYPES } from "./ListRule";
+import {
+    ALL_RULE_TYPES,
+    EntityType,
+    ListRule,
+    Recommendation,
+    ROOM_RULE_TYPES,
+    RULE_ROOM,
+    RULE_SERVER,
+    RULE_USER,
+    SERVER_RULE_TYPES,
+    USER_RULE_TYPES,
+} from "./ListRule";
 import { MatrixSendClient } from "../MatrixEmitter";
 import AwaitLock from "await-lock";
 import { monotonicFactory } from "ulidx";
@@ -47,44 +58,57 @@ export const WATCHED_LISTS_EVENT_TYPE = "org.matrix.mjolnir.watched_lists";
 /**
  * A prefix used to record that we have already warned at least once that a PolicyList room is unprotected.
  */
-export const WARN_UNPROTECTED_ROOM_EVENT_PREFIX = "org.matrix.mjolnir.unprotected_room_warning.for.";
+export const WARN_UNPROTECTED_ROOM_EVENT_PREFIX =
+    "org.matrix.mjolnir.unprotected_room_warning.for.";
 export const SHORTCODE_EVENT_TYPE = "org.matrix.mjolnir.shortcode";
 
 export enum ChangeType {
     Added = "ADDED",
     Removed = "REMOVED",
-    Modified = "MODIFIED"
+    Modified = "MODIFIED",
 }
 
 export interface ListRuleChange {
-    readonly changeType: ChangeType,
+    readonly changeType: ChangeType;
     /**
      * State event that caused the change.
      * If the rule was redacted, this will be the redacted version of the event.
      */
-    readonly event: any,
+    readonly event: any;
     /**
      * The sender that caused the change.
      * The original event sender unless the change is because `event` was redacted. When the change is `event` being redacted
      * this will be the user who caused the redaction.
      */
-    readonly sender: string,
+    readonly sender: string;
     /**
      * The current rule represented by the event.
      * If the rule has been removed, then this will show what the rule was.
      */
-    readonly rule: ListRule,
+    readonly rule: ListRule;
     /**
      * The previous state that has been changed. Only (and always) provided when the change type is `ChangeType.Removed` or `Modified`.
      * This will be a copy of the same event as `event` when a redaction has occurred and this will show its unredacted state.
      */
-    readonly previousState?: any,
+    readonly previousState?: any;
 }
 
 export declare interface PolicyList {
     // PolicyList.update is emitted when the PolicyList has pulled new rules from Matrix and informs listeners of any changes.
-    on(event: 'PolicyList.update', listener: (list: PolicyList, changes: ListRuleChange[], revision: Revision) => void): this
-    emit(event: 'PolicyList.update', list: PolicyList, changes: ListRuleChange[], revision: Revision): boolean
+    on(
+        event: "PolicyList.update",
+        listener: (
+            list: PolicyList,
+            changes: ListRuleChange[],
+            revision: Revision,
+        ) => void,
+    ): this;
+    emit(
+        event: "PolicyList.update",
+        list: PolicyList,
+        changes: ListRuleChange[],
+        revision: Revision,
+    ): boolean;
 }
 
 /**
@@ -115,7 +139,7 @@ export class PolicyList extends EventEmitter {
 
     /** MSC3784 support. Please note that policy lists predate room types. So there will be lists in the wild without this type. */
     public static readonly ROOM_TYPE = "support.feline.policy.lists.msc.v1";
-    public static readonly ROOM_TYPE_VARIANTS = [PolicyList.ROOM_TYPE]
+    public static readonly ROOM_TYPE_VARIANTS = [PolicyList.ROOM_TYPE];
 
     /**
      * This is used to annotate state events we store with the rule they are associated with.
@@ -123,7 +147,8 @@ export class PolicyList extends EventEmitter {
      * which may assume `ListRule`s that are removed will be identital (Object.is) to when they were added.
      * If you are adding new listeners, you should check the source event_id of the rule.
      */
-    private static readonly EVENT_RULE_ANNOTATION_KEY = 'org.matrix.mjolnir.annotation.rule';
+    private static readonly EVENT_RULE_ANNOTATION_KEY =
+        "org.matrix.mjolnir.annotation.rule";
 
     /**
      * An ID that represents the current version of the list state.
@@ -143,7 +168,11 @@ export class PolicyList extends EventEmitter {
      * @param roomRef A sharable/clickable matrix URL that refers to the room.
      * @param client A matrix client that is used to read the state of the room when `updateList` is called.
      */
-    constructor(public readonly roomId: string, public readonly roomRef: string, private client: MatrixSendClient) {
+    constructor(
+        public readonly roomId: string,
+        public readonly roomRef: string,
+        private client: MatrixSendClient,
+    ) {
         super();
         this.batcher = new UpdateBatcher(this);
     }
@@ -160,32 +189,35 @@ export class PolicyList extends EventEmitter {
         client: MatrixSendClient,
         shortcode: string,
         invite: string[],
-        createRoomOptions: RoomCreateOptions = {}
+        createRoomOptions: RoomCreateOptions = {},
     ): Promise<string /* room id */> {
         const powerLevels: { [key: string]: any } = {
-            "ban": 50,
-            "events": {
+            ban: 50,
+            events: {
                 "m.room.name": 100,
                 "m.room.power_levels": 100,
             },
-            "events_default": 50, // non-default
-            "invite": 0,
-            "kick": 50,
-            "notifications": {
-                "room": 20,
+            events_default: 50, // non-default
+            invite: 0,
+            kick: 50,
+            notifications: {
+                room: 20,
             },
-            "redact": 50,
-            "state_default": 50,
-            "users": {
+            redact: 50,
+            state_default: 50,
+            users: {
                 [await client.getUserId()]: 100,
-                ...invite.reduce((users, mxid) => ({...users,  [mxid]: 50 }), {}),
+                ...invite.reduce(
+                    (users, mxid) => ({ ...users, [mxid]: 50 }),
+                    {},
+                ),
             },
-            "users_default": 0,
+            users_default: 0,
         };
         const finalRoomCreateOptions: RoomCreateOptions = {
             // Support for MSC3784.
             creation_content: {
-                type: PolicyList.ROOM_TYPE
+                type: PolicyList.ROOM_TYPE,
             },
             preset: "public_chat",
             invite,
@@ -193,26 +225,31 @@ export class PolicyList extends EventEmitter {
                 {
                     type: SHORTCODE_EVENT_TYPE,
                     state_key: "",
-                    content: {shortcode: shortcode}
-                }
+                    content: { shortcode: shortcode },
+                },
             ],
             power_level_content_override: powerLevels,
-            ...createRoomOptions
+            ...createRoomOptions,
         };
         // Guard room type in case someone overwrites it when declaring custom creation_content in future code.
         const roomType = finalRoomCreateOptions.creation_content?.type;
-        if (typeof roomType !== 'string' || !PolicyList.ROOM_TYPE_VARIANTS.includes(roomType)) {
-            throw new TypeError(`Creating a policy room with a type other than the policy room type is not supported, you probably don't want to do this.`);
+        if (
+            typeof roomType !== "string" ||
+            !PolicyList.ROOM_TYPE_VARIANTS.includes(roomType)
+        ) {
+            throw new TypeError(
+                `Creating a policy room with a type other than the policy room type is not supported, you probably don't want to do this.`,
+            );
         }
         const listRoomId = await client.createRoom(finalRoomCreateOptions);
-        return listRoomId
+        return listRoomId;
     }
 
     /**
      * The code that can be used to refer to this banlist in Mjolnir commands.
      */
     public get listShortcode(): string {
-        return this.shortcode || '';
+        return this.shortcode || "";
     }
 
     /**
@@ -248,8 +285,11 @@ export class PolicyList extends EventEmitter {
      * @param recommendation A specific recommendation to filter for e.g. `m.ban`. Please remember recommendation varients are normalized.
      * @returns The active ListRules for the ban list of that kind.
      */
-    public rulesOfKind(kind: string, recommendation?: Recommendation): ListRule[] {
-        const rules: ListRule[] = []
+    public rulesOfKind(
+        kind: string,
+        recommendation?: Recommendation,
+    ): ListRule[] {
+        const rules: ListRule[] = [];
         const stateKeyMap = this.state.get(kind);
         if (stateKeyMap) {
             for (const event of stateKeyMap.values()) {
@@ -290,10 +330,15 @@ export class PolicyList extends EventEmitter {
      * @returns All of the rules that match this entity.
      */
     public rulesMatchingEntity(entity: string, ruleKind?: string): ListRule[] {
-        const ruleTypeOf: (entityPart: string) => string = (entityPart: string) => {
+        const ruleTypeOf: (entityPart: string) => string = (
+            entityPart: string,
+        ) => {
             if (ruleKind) {
                 return ruleKind;
-            } else if (entityPart.startsWith("#") || entityPart.startsWith("#")) {
+            } else if (
+                entityPart.startsWith("#") ||
+                entityPart.startsWith("#")
+            ) {
                 return RULE_ROOM;
             } else if (entity.startsWith("@")) {
                 return RULE_USER;
@@ -306,11 +351,15 @@ export class PolicyList extends EventEmitter {
             // We special case because want to see whether a server ban is preventing this user from participating too.
             const userId = new UserID(entity);
             return [
-                ...this.userRules.filter(rule => rule.isMatch(entity)),
-                ...this.serverRules.filter(rule => rule.isMatch(userId.domain))
-            ]
+                ...this.userRules.filter((rule) => rule.isMatch(entity)),
+                ...this.serverRules.filter((rule) =>
+                    rule.isMatch(userId.domain),
+                ),
+            ];
         } else {
-            return this.rulesOfKind(ruleTypeOf(entity)).filter(rule => rule.isMatch(entity));
+            return this.rulesOfKind(ruleTypeOf(entity)).filter((rule) =>
+                rule.isMatch(entity),
+            );
         }
     }
 
@@ -322,14 +371,25 @@ export class PolicyList extends EventEmitter {
      * @param additionalProperties Any other properties to embed in the rule such as a reason.
      * @returns The event id of the policy.
      */
-    public async createPolicy(entityType: EntityType, recommendation: Recommendation, entity: string, additionalProperties = {}): Promise<string> {
+    public async createPolicy(
+        entityType: EntityType,
+        recommendation: Recommendation,
+        entity: string,
+        additionalProperties = {},
+    ): Promise<string> {
         // '@' at the beginning of state keys is reserved.
-        const stateKey = entityType === RULE_USER ? '_' + entity.substring(1) : entity;
-        const eventId = await this.client.sendStateEvent(this.roomId, entityType, stateKey, {
-            recommendation,
-            entity,
-            ...additionalProperties
-        });
+        const stateKey =
+            entityType === RULE_USER ? "_" + entity.substring(1) : entity;
+        const eventId = await this.client.sendStateEvent(
+            this.roomId,
+            entityType,
+            stateKey,
+            {
+                recommendation,
+                entity,
+                ...additionalProperties,
+            },
+        );
         this.updateForEvent(eventId);
         return eventId;
     }
@@ -340,9 +400,13 @@ export class PolicyList extends EventEmitter {
      * @param entity The entity to ban.
      * @param reason A reason we are banning them.
      */
-    public async banEntity(ruleType: EntityType, entity: string, reason?: string): Promise<void> {
+    public async banEntity(
+        ruleType: EntityType,
+        entity: string,
+        reason?: string,
+    ): Promise<void> {
         await this.createPolicy(ruleType, Recommendation.Ban, entity, {
-            reason: reason || '<no reason supplied>',
+            reason: reason || "<no reason supplied>",
         });
     }
 
@@ -353,7 +417,10 @@ export class PolicyList extends EventEmitter {
      * @param entity The entity to unban from this list.
      * @returns true if any rules were removed and the entity was unbanned, otherwise false because there were no rules.
      */
-    public async unbanEntity(ruleType: string, entity: string): Promise<boolean> {
+    public async unbanEntity(
+        ruleType: string,
+        entity: string,
+    ): Promise<boolean> {
         let typesToCheck = [ruleType];
         switch (ruleType) {
             case RULE_USER:
@@ -367,22 +434,38 @@ export class PolicyList extends EventEmitter {
                 break;
         }
         const sendNullState = async (stateType: string, stateKey: string) => {
-            const event_id = await this.client.sendStateEvent(this.roomId, stateType, stateKey, {});
+            const event_id = await this.client.sendStateEvent(
+                this.roomId,
+                stateType,
+                stateKey,
+                {},
+            );
             this.updateForEvent(event_id);
-        }
+        };
         const removeRule = async (rule: ListRule): Promise<void> => {
             const stateKey = rule.sourceEvent.state_key;
             // We can't cheat and check our state cache because we normalize the event types to the most recent version.
-            const typesToRemove = (await Promise.all(
-                typesToCheck.map(stateType => this.client.getRoomStateEvent(this.roomId, stateType, stateKey)
-                    .then(_ => stateType) // We need the state type as getRoomState only returns the content, not the top level.
-                    .catch(e => e.statusCode === 404 ? null : Promise.reject(e))))
-                ).filter(e => e); // remove nulls. I don't know why TS still thinks there can be nulls after this??
+            const typesToRemove = (
+                await Promise.all(
+                    typesToCheck.map((stateType) =>
+                        this.client
+                            .getRoomStateEvent(this.roomId, stateType, stateKey)
+                            .then((_) => stateType) // We need the state type as getRoomState only returns the content, not the top level.
+                            .catch((e) =>
+                                e.statusCode === 404 ? null : Promise.reject(e),
+                            ),
+                    ),
+                )
+            ).filter((e) => e); // remove nulls. I don't know why TS still thinks there can be nulls after this??
             if (typesToRemove.length === 0) {
                 return;
             }
-            await Promise.all(typesToRemove.map(stateType => sendNullState(stateType!, stateKey)));
-        }
+            await Promise.all(
+                typesToRemove.map((stateType) =>
+                    sendNullState(stateType!, stateKey),
+                ),
+            );
+        };
         const rules = this.rulesMatchingEntity(entity, ruleType);
         await Promise.all(rules.map(removeRule));
         return rules.length > 0;
@@ -393,7 +476,9 @@ export class PolicyList extends EventEmitter {
      * and updating the model to reflect the room.
      * @returns A description of any rules that were added, modified or removed from the list as a result of this update.
      */
-    public async updateList(): Promise<ReturnType<PolicyList["updateListWithState"]>> {
+    public async updateList(): Promise<
+        ReturnType<PolicyList["updateListWithState"]>
+    > {
         await this.updateListLock.acquireAsync();
         try {
             const state = await this.client.getRoomState(this.roomId);
@@ -409,30 +494,39 @@ export class PolicyList extends EventEmitter {
      * @param state Room state to update the list with, provided by `updateList`
      * @returns Any changes that have been made to the PolicyList.
      */
-    private updateListWithState(state: any): { revision: Revision, changes: ListRuleChange[] } {
+    private updateListWithState(state: any): {
+        revision: Revision;
+        changes: ListRuleChange[];
+    } {
         const changes: ListRuleChange[] = [];
         for (const event of state) {
-            if (event['state_key'] === '' && event['type'] === SHORTCODE_EVENT_TYPE) {
-                this.shortcode = (event['content'] || {})['shortcode'] || null;
+            if (
+                event["state_key"] === "" &&
+                event["type"] === SHORTCODE_EVENT_TYPE
+            ) {
+                this.shortcode = (event["content"] || {})["shortcode"] || null;
                 continue;
             }
 
-            if (event['state_key'] === '' || !ALL_RULE_TYPES.includes(event['type'])) {
+            if (
+                event["state_key"] === "" ||
+                !ALL_RULE_TYPES.includes(event["type"])
+            ) {
                 continue;
             }
 
             let kind: EntityType | null = null;
-            if (USER_RULE_TYPES.includes(event['type'])) {
+            if (USER_RULE_TYPES.includes(event["type"])) {
                 kind = RULE_USER;
-            } else if (ROOM_RULE_TYPES.includes(event['type'])) {
+            } else if (ROOM_RULE_TYPES.includes(event["type"])) {
                 kind = RULE_ROOM;
-            } else if (SERVER_RULE_TYPES.includes(event['type'])) {
+            } else if (SERVER_RULE_TYPES.includes(event["type"])) {
                 kind = RULE_SERVER;
             } else {
                 continue; // invalid/unknown
             }
 
-            const previousState = this.getState(kind, event['state_key']);
+            const previousState = this.getState(kind, event["state_key"]);
 
             // Now we need to figure out if the current event is of an obsolete type
             // (e.g. org.matrix.mjolnir.rule.user) when compared to the previousState (which might be m.policy.rule.user).
@@ -440,16 +534,31 @@ export class PolicyList extends EventEmitter {
             // as it may be someone deleting the older versions of the rules.
             if (previousState) {
                 const logObsoleteRule = () => {
-                    LogService.info('PolicyList', `In PolicyList ${this.roomRef}, conflict between rules ${event['event_id']} (with obsolete type ${event['type']}) ` +
-                        `and ${previousState['event_id']} (with standard type ${previousState['type']}). Ignoring rule with obsolete type.`);
-                }
-                if (kind === RULE_USER && USER_RULE_TYPES.indexOf(event['type']) > USER_RULE_TYPES.indexOf(previousState['type'])) {
+                    LogService.info(
+                        "PolicyList",
+                        `In PolicyList ${this.roomRef}, conflict between rules ${event["event_id"]} (with obsolete type ${event["type"]}) ` +
+                            `and ${previousState["event_id"]} (with standard type ${previousState["type"]}). Ignoring rule with obsolete type.`,
+                    );
+                };
+                if (
+                    kind === RULE_USER &&
+                    USER_RULE_TYPES.indexOf(event["type"]) >
+                        USER_RULE_TYPES.indexOf(previousState["type"])
+                ) {
                     logObsoleteRule();
                     continue;
-                } else if (kind === RULE_ROOM && ROOM_RULE_TYPES.indexOf(event['type']) > ROOM_RULE_TYPES.indexOf(previousState['type'])) {
+                } else if (
+                    kind === RULE_ROOM &&
+                    ROOM_RULE_TYPES.indexOf(event["type"]) >
+                        ROOM_RULE_TYPES.indexOf(previousState["type"])
+                ) {
                     logObsoleteRule();
                     continue;
-                } else if (kind === RULE_SERVER && SERVER_RULE_TYPES.indexOf(event['type']) > SERVER_RULE_TYPES.indexOf(previousState['type'])) {
+                } else if (
+                    kind === RULE_SERVER &&
+                    SERVER_RULE_TYPES.indexOf(event["type"]) >
+                        SERVER_RULE_TYPES.indexOf(previousState["type"])
+                ) {
                     logObsoleteRule();
                     continue;
                 }
@@ -458,12 +567,12 @@ export class PolicyList extends EventEmitter {
             // The reason we set the state at this point is because it is valid to want to set the state to an invalid rule
             // in order to mark a rule as deleted.
             // We always set state with the normalised state type via `kind` to de-duplicate rules.
-            this.setState(kind, event['state_key'], event);
+            this.setState(kind, event["state_key"], event);
             const changeType: null | ChangeType = (() => {
                 if (!previousState) {
                     return ChangeType.Added;
-                } else if (previousState['event_id'] === event['event_id']) {
-                    if (event['unsigned']?.['redacted_because']) {
+                } else if (previousState["event_id"] === event["event_id"]) {
+                    if (event["unsigned"]?.["redacted_because"]) {
                         return ChangeType.Removed;
                     } else {
                         // Nothing has changed.
@@ -471,7 +580,7 @@ export class PolicyList extends EventEmitter {
                     }
                 } else {
                     // Then the policy has been modified in some other way, possibly 'soft' redacted by a new event with empty content...
-                    if (Object.keys(event['content']).length === 0) {
+                    if (Object.keys(event["content"]).length === 0) {
                         return ChangeType.Removed;
                     } else {
                         return ChangeType.Modified;
@@ -481,16 +590,24 @@ export class PolicyList extends EventEmitter {
 
             // Clear out any events that we were informed about via updateForEvent.
             if (changeType !== null) {
-                this.batchedEvents.delete(event.event_id)
+                this.batchedEvents.delete(event.event_id);
             }
 
             // If we haven't got any information about what the rule used to be, then it wasn't a valid rule to begin with
             // and so will not have been used. Removing a rule like this therefore results in no change.
-            if (changeType === ChangeType.Removed && previousState?.[PolicyList.EVENT_RULE_ANNOTATION_KEY]) {
-                const sender = event.unsigned['redacted_because'] ? event.unsigned['redacted_because']['sender'] : event.sender;
+            if (
+                changeType === ChangeType.Removed &&
+                previousState?.[PolicyList.EVENT_RULE_ANNOTATION_KEY]
+            ) {
+                const sender = event.unsigned["redacted_because"]
+                    ? event.unsigned["redacted_because"]["sender"]
+                    : event.sender;
                 changes.push({
-                    changeType, event, sender, rule: previousState[PolicyList.EVENT_RULE_ANNOTATION_KEY],
-                    ...previousState ? { previousState } : {}
+                    changeType,
+                    event,
+                    sender,
+                    rule: previousState[PolicyList.EVENT_RULE_ANNOTATION_KEY],
+                    ...(previousState ? { previousState } : {}),
                 });
                 // Event has no content and cannot be parsed as a ListRule.
                 continue;
@@ -503,19 +620,28 @@ export class PolicyList extends EventEmitter {
             }
             event[PolicyList.EVENT_RULE_ANNOTATION_KEY] = rule;
             if (changeType) {
-                changes.push({ rule, changeType, event, sender: event.sender, ...previousState ? { previousState } : {} });
+                changes.push({
+                    rule,
+                    changeType,
+                    event,
+                    sender: event.sender,
+                    ...(previousState ? { previousState } : {}),
+                });
             }
         }
         if (changes.length > 0) {
             this.revisionId = new Revision();
-            this.emit('PolicyList.update', this, changes, this.revisionId);
+            this.emit("PolicyList.update", this, changes, this.revisionId);
         }
         if (this.batchedEvents.keys.length !== 0) {
             // The only reason why this isn't a TypeError is because we need to know about this when it happens, because it means
             // we're probably doing something wrong, on the other hand, if someone messes with a server implementation and
             // strange things happen where events appear in /sync sooner than they do in /state (which would be outrageous)
             // we don't want Mjolnir to stop working properly. Though, I am not confident a burried warning is going to alert us.
-            LogService.warn("PolicyList", "The policy list is being informed about events that it cannot find in the room state, this is really bad and you should seek help.");
+            LogService.warn(
+                "PolicyList",
+                "The policy list is being informed about events that it cannot find in the room state, this is really bad and you should seek help.",
+            );
         }
         return { revision: this.revisionId, changes };
     }
@@ -525,7 +651,10 @@ export class PolicyList extends EventEmitter {
      * @param event An event from the room the `PolicyList` models to inform an instance about.
      */
     public updateForEvent(eventId: string): void {
-        if (this.stateByEventId.has(eventId) || this.batchedEvents.has(eventId)) {
+        if (
+            this.stateByEventId.has(eventId) ||
+            this.batchedEvents.has(eventId)
+        ) {
             return; // we already know about this event.
         }
         this.batcher.addToBatch(eventId);
@@ -548,9 +677,7 @@ class UpdateBatcher {
     private readonly waitPeriodMS = 200; // 200ms seems good enough.
     private readonly maxWaitMS = 3000; // 3s is long enough to wait while batching.
 
-    constructor(private readonly banList: PolicyList) {
-
-    }
+    constructor(private readonly banList: PolicyList) {}
 
     /**
      * Reset the state for the next batch.
@@ -569,8 +696,13 @@ class UpdateBatcher {
     private async checkBatch(eventId: string): Promise<void> {
         let start = Date.now();
         do {
-            await new Promise(resolve => setTimeout(resolve, this.waitPeriodMS));
-        } while ((Date.now() - start) < this.maxWaitMS && this.latestEventId !== eventId)
+            await new Promise((resolve) =>
+                setTimeout(resolve, this.waitPeriodMS),
+            );
+        } while (
+            Date.now() - start < this.maxWaitMS &&
+            this.latestEventId !== eventId
+        );
         this.reset();
         // batching finished, update the associated list.
         await this.banList.updateList();
@@ -604,7 +736,6 @@ class UpdateBatcher {
  * We use a ULID to work out whether a revision supersedes another.
  */
 export class Revision {
-
     /**
      * Ensures that ULIDs are monotonic.
      */

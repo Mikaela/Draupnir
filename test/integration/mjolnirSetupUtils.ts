@@ -19,9 +19,9 @@ import {
     MemoryStorageProvider,
     LogService,
     LogLevel,
-    RichConsoleLogger
+    RichConsoleLogger,
 } from "matrix-bot-sdk";
-import { Mjolnir}  from '../../src/Mjolnir';
+import { Mjolnir } from "../../src/Mjolnir";
 import { overrideRatelimitForUser, registerUser } from "./clientHelper";
 import { initializeSentry, patchMatrixClient } from "../../src/utils";
 import { IConfig } from "../../src/config";
@@ -29,7 +29,7 @@ import { IConfig } from "../../src/config";
 patchMatrixClient();
 
 export interface MjolnirTestContext extends Mocha.Context {
-    mjolnir?: Mjolnir
+    mjolnir?: Mjolnir;
 }
 
 /**
@@ -38,17 +38,22 @@ export interface MjolnirTestContext extends Mocha.Context {
  * @param alias The alias of the room.
  * @returns The room ID of the aliased room.
  */
-export async function ensureAliasedRoomExists(client: MatrixClient, alias: string): Promise<string> {
+export async function ensureAliasedRoomExists(
+    client: MatrixClient,
+    alias: string,
+): Promise<string> {
     try {
         return await client.resolveRoom(alias);
     } catch (e) {
-        if (e?.body?.errcode === 'M_NOT_FOUND') {
-            console.info(`${alias} hasn't been created yet, so we're making it now.`)
+        if (e?.body?.errcode === "M_NOT_FOUND") {
+            console.info(
+                `${alias} hasn't been created yet, so we're making it now.`,
+            );
             let roomId = await client.createRoom({
                 visibility: "public",
             });
             await client.createRoomAlias(alias, roomId);
-            return roomId
+            return roomId;
         }
         throw e;
     }
@@ -58,14 +63,22 @@ async function configureMjolnir(config: IConfig) {
     // Initialize error monitoring as early as possible.
     initializeSentry(config);
     try {
-        await registerUser(config.homeserverUrl, config.pantalaimon.username, config.pantalaimon.username, config.pantalaimon.password, true)
+        await registerUser(
+            config.homeserverUrl,
+            config.pantalaimon.username,
+            config.pantalaimon.username,
+            config.pantalaimon.password,
+            true,
+        );
     } catch (e) {
-        if (e?.body?.errcode === 'M_USER_IN_USE') {
-            console.log(`${config.pantalaimon.username} already registered, skipping`);
+        if (e?.body?.errcode === "M_USER_IN_USE") {
+            console.log(
+                `${config.pantalaimon.username} already registered, skipping`,
+            );
             return;
         }
         throw e;
-    };
+    }
 }
 
 export function mjolnir(): Mjolnir | null {
@@ -74,7 +87,7 @@ export function mjolnir(): Mjolnir | null {
 export function matrixClient(): MatrixClient | null {
     return globalClient;
 }
-let globalClient: MatrixClient | null
+let globalClient: MatrixClient | null;
 let globalMjolnir: Mjolnir | null;
 
 /**
@@ -85,9 +98,18 @@ export async function makeMjolnir(config: IConfig): Promise<Mjolnir> {
     LogService.setLogger(new RichConsoleLogger());
     LogService.setLevel(LogLevel.fromString(config.logLevel, LogLevel.DEBUG));
     LogService.info("test/mjolnirSetupUtils", "Starting bot...");
-    const pantalaimon = new PantalaimonClient(config.homeserverUrl, new MemoryStorageProvider());
-    const client = await pantalaimon.createClientWithCredentials(config.pantalaimon.username, config.pantalaimon.password);
-    await overrideRatelimitForUser(config.homeserverUrl, await client.getUserId());
+    const pantalaimon = new PantalaimonClient(
+        config.homeserverUrl,
+        new MemoryStorageProvider(),
+    );
+    const client = await pantalaimon.createClientWithCredentials(
+        config.pantalaimon.username,
+        config.pantalaimon.password,
+    );
+    await overrideRatelimitForUser(
+        config.homeserverUrl,
+        await client.getUserId(),
+    );
     await ensureAliasedRoomExists(client, config.managementRoom);
     let mj = await Mjolnir.setupMjolnirFromConfig(client, client, config);
     globalClient = client;
@@ -101,7 +123,11 @@ export async function makeMjolnir(config: IConfig): Promise<Mjolnir> {
  * @param roomId The roomId of the room to leave.
  * @param alias The alias to remove from the room.
  */
-export async function teardownManagementRoom(client: MatrixClient, roomId: string, alias: string) {
+export async function teardownManagementRoom(
+    client: MatrixClient,
+    roomId: string,
+    alias: string,
+) {
     await client.deleteRoomAlias(alias);
     await client.leaveRoom(roomId);
 }

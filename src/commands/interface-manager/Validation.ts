@@ -25,9 +25,12 @@ limitations under the License.
  * are NOT distributed, contributed, committed, or licensed under the Apache License.
  */
 
-type ValidationMatchExpression<Ok, Err> = { ok?: (ok: Ok) => any, err?: (err: Err) => any};
+type ValidationMatchExpression<Ok, Err> = {
+    ok?: (ok: Ok) => any;
+    err?: (err: Err) => any;
+};
 
-const noValue = Symbol('noValue');
+const noValue = Symbol("noValue");
 
 /**
  * This is a utility specifically for validating user input, and reporting
@@ -43,21 +46,25 @@ const noValue = Symbol('noValue');
  */
 export class CommandResult<Ok, Err extends CommandError = CommandError> {
     private constructor(
-        private readonly okValue: Ok|typeof noValue,
-        private readonly errValue: Err|typeof noValue,
-    ) {
-
-    }
-    public static Ok<Ok, Err extends CommandError = CommandError>(value: Ok): CommandResult<Ok, Err> {
+        private readonly okValue: Ok | typeof noValue,
+        private readonly errValue: Err | typeof noValue,
+    ) {}
+    public static Ok<Ok, Err extends CommandError = CommandError>(
+        value: Ok,
+    ): CommandResult<Ok, Err> {
         return new CommandResult<Ok, Err>(value, noValue);
     }
 
-    public static Err<Ok, Err extends CommandError = CommandError>(value: Err): CommandResult<Ok, Err> {
+    public static Err<Ok, Err extends CommandError = CommandError>(
+        value: Err,
+    ): CommandResult<Ok, Err> {
         return new CommandResult<Ok, Err>(noValue, value);
     }
 
     public async match(expression: ValidationMatchExpression<Ok, Err>) {
-        return this.okValue ? await expression.ok!(this.ok) : await expression.err!(this.err);
+        return this.okValue
+            ? await expression.ok!(this.ok)
+            : await expression.err!(this.err);
     }
 
     public isOk(): boolean {
@@ -86,11 +93,7 @@ export class CommandResult<Ok, Err extends CommandError = CommandError> {
 }
 
 export class CommandError {
-    public constructor(
-        public readonly message: string,
-    ) {
-
-    }
+    public constructor(public readonly message: string) {}
 
     /**
      * Utility to wrap the error into a Result.
@@ -98,7 +101,10 @@ export class CommandError {
      * @param _options This exists so that the method is extensible by subclasses. Otherwise they wouldn't be able to pass other constructor arguments through this method.
      * @returns A CommandResult with a CommandError nested within.
      */
-    public static Result<Ok>(message: string, _options = {}): CommandResult<Ok> {
+    public static Result<Ok>(
+        message: string,
+        _options = {},
+    ): CommandResult<Ok> {
         return CommandResult.Err(new CommandError(message));
     }
 }

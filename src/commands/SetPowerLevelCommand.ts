@@ -29,22 +29,39 @@ import { Mjolnir } from "../Mjolnir";
 import { LogLevel, LogService } from "matrix-bot-sdk";
 
 // !mjolnir powerlevel <user ID> <level> [room]
-export async function execSetPowerLevelCommand(roomId: string, event: any, mjolnir: Mjolnir, parts: string[]) {
+export async function execSetPowerLevelCommand(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+    parts: string[],
+) {
     const victim = parts[2];
     const level = Math.round(Number(parts[3]));
     const inRoom = parts[4];
 
-    let targetRooms = inRoom ? [await mjolnir.client.resolveRoom(inRoom)] : mjolnir.protectedRoomsTracker.getProtectedRooms();
+    let targetRooms = inRoom
+        ? [await mjolnir.client.resolveRoom(inRoom)]
+        : mjolnir.protectedRoomsTracker.getProtectedRooms();
 
     for (const targetRoomId of targetRooms) {
         try {
             await mjolnir.client.setUserPowerLevel(victim, targetRoomId, level);
         } catch (e) {
-            const message = e.message || (e.body ? e.body.error : '<no message>');
+            const message =
+                e.message || (e.body ? e.body.error : "<no message>");
             LogService.error("SetPowerLevelCommand", e);
-            await mjolnir.managementRoomOutput.logMessage(LogLevel.ERROR, "SetPowerLevelCommand", `Failed to set power level of ${victim} to ${level} in ${targetRoomId}: ${message}`, targetRoomId);
+            await mjolnir.managementRoomOutput.logMessage(
+                LogLevel.ERROR,
+                "SetPowerLevelCommand",
+                `Failed to set power level of ${victim} to ${level} in ${targetRoomId}: ${message}`,
+                targetRoomId,
+            );
         }
     }
 
-    await mjolnir.client.unstableApis.addReactionToEvent(roomId, event['event_id'], '✅');
+    await mjolnir.client.unstableApis.addReactionToEvent(
+        roomId,
+        event["event_id"],
+        "✅",
+    );
 }

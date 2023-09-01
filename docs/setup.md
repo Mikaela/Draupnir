@@ -23,8 +23,9 @@ See the [sample configuration](../config/default.yaml) for documentation about i
 ## Installation
 
 On a high level, installing Draupnir works like the following;
+
 1. Creating an account for draupnir.
-    (Optional) Disable rate limits for that account.
+   (Optional) Disable rate limits for that account.
 2. Install draupnir, see below.
 3. Configure draupnir see [further below](#post-install).
 4. Start draupnir.
@@ -32,6 +33,7 @@ On a high level, installing Draupnir works like the following;
 Draupnir can be installed in two ways, via Docker, or building it yourself.
 
 See the below links for corresponding installation documentation;
+
 - [Docker](./setup_docker.md)
 - [Building It](./setup_selfbuild.md)
 

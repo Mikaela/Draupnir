@@ -3,14 +3,25 @@
  * All rights reserved.
  */
 
-import { WeakEvent } from 'matrix-appservice-bridge';
-import { readCommand } from '../../commands/interface-manager/CommandReader';
-import { defineCommandTable, defineInterfaceCommand, findCommandTable } from '../../commands/interface-manager/InterfaceCommand';
-import { defineMatrixInterfaceAdaptor, findMatrixInterfaceAdaptor, MatrixContext } from '../../commands/interface-manager/MatrixInterfaceAdaptor';
-import { ArgumentStream, parameters } from '../../commands/interface-manager/ParameterParsing';
-import { MjolnirAppService } from '../AppService';
-import { CommandResult } from '../../commands/interface-manager/Validation';
-import { renderHelp } from '../../commands/interface-manager/MatrixHelpRenderer';
+import { WeakEvent } from "matrix-appservice-bridge";
+import { readCommand } from "../../commands/interface-manager/CommandReader";
+import {
+    defineCommandTable,
+    defineInterfaceCommand,
+    findCommandTable,
+} from "../../commands/interface-manager/InterfaceCommand";
+import {
+    defineMatrixInterfaceAdaptor,
+    findMatrixInterfaceAdaptor,
+    MatrixContext,
+} from "../../commands/interface-manager/MatrixInterfaceAdaptor";
+import {
+    ArgumentStream,
+    parameters,
+} from "../../commands/interface-manager/ParameterParsing";
+import { MjolnirAppService } from "../AppService";
+import { CommandResult } from "../../commands/interface-manager/Validation";
+import { renderHelp } from "../../commands/interface-manager/MatrixHelpRenderer";
 
 defineCommandTable("appservice bot");
 
@@ -18,45 +29,54 @@ export interface AppserviceContext extends MatrixContext {
     appservice: MjolnirAppService;
 }
 
-export type AppserviceBaseExecutor = (this: AppserviceContext, ...args: any[]) => Promise<CommandResult<any>>;
+export type AppserviceBaseExecutor = (
+    this: AppserviceContext,
+    ...args: any[]
+) => Promise<CommandResult<any>>;
 
-import '../../commands/interface-manager/MatrixPresentations';
-import './ListCommand';
-import './AccessCommands';
-import { AppserviceBotEmitter } from './AppserviceBotEmitter';
-
+import "../../commands/interface-manager/MatrixPresentations";
+import "./ListCommand";
+import "./AccessCommands";
+import { AppserviceBotEmitter } from "./AppserviceBotEmitter";
 
 const helpCommand = defineInterfaceCommand({
     parameters: parameters([]),
     table: "appservice bot",
-    command: async function() { return CommandResult.Ok(findCommandTable("appservice bot").getAllCommands()) },
+    command: async function () {
+        return CommandResult.Ok(
+            findCommandTable("appservice bot").getAllCommands(),
+        );
+    },
     designator: ["help"],
-    summary: "Display this message"
-})
+    summary: "Display this message",
+});
 
 defineMatrixInterfaceAdaptor({
     interfaceCommand: helpCommand,
-    renderer: renderHelp
-})
+    renderer: renderHelp,
+});
 
 export class AppserviceCommandHandler {
     private readonly commandTable = findCommandTable("appservice bot");
 
-    constructor (
-        private readonly appservice: MjolnirAppService
-    ) {
-
-    }
+    constructor(private readonly appservice: MjolnirAppService) {}
 
     public handleEvent(mxEvent: WeakEvent): void {
-        if (mxEvent.type !== 'm.room.message' && mxEvent.room_id !== this.appservice.config.adminRoom) {
+        if (
+            mxEvent.type !== "m.room.message" &&
+            mxEvent.room_id !== this.appservice.config.adminRoom
+        ) {
             return;
         }
-        const body = typeof mxEvent.content['body'] === 'string' ? mxEvent.content['body'] : '';
+        const body =
+            typeof mxEvent.content["body"] === "string"
+                ? mxEvent.content["body"]
+                : "";
         if (body.startsWith(this.appservice.bridge.getBot().getUserId())) {
             const readItems = readCommand(body).slice(1); // remove "!mjolnir"
             const argumentStream = new ArgumentStream(readItems);
-            const command = this.commandTable.findAMatchingCommand(argumentStream);
+            const command =
+                this.commandTable.findAMatchingCommand(argumentStream);
             if (command) {
                 const adaptor = findMatrixInterfaceAdaptor(command);
                 const context: AppserviceContext = {

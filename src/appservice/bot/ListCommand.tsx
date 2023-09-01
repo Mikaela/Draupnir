@@ -3,17 +3,30 @@
  * All rights reserved.
  */
 
-import { defineMatrixInterfaceAdaptor, MatrixContext, MatrixInterfaceAdaptor } from '../../commands/interface-manager/MatrixInterfaceAdaptor';
-import { MatrixSendClient } from '../../MatrixEmitter';
-import { UnstartedMjolnir } from '../MjolnirManager';
-import { BaseFunction, defineInterfaceCommand } from '../../commands/interface-manager/InterfaceCommand';
-import { findPresentationType, parameters } from '../../commands/interface-manager/ParameterParsing';
-import { AppserviceBaseExecutor } from './AppserviceCommandHandler';
-import { UserID } from 'matrix-bot-sdk';
-import { CommandError, CommandResult } from '../../commands/interface-manager/Validation';
-import { tickCrossRenderer } from '../../commands/interface-manager/MatrixHelpRenderer';
-import { JSXFactory } from '../../commands/interface-manager/JSXFactory';
-import { renderMatrixAndSend } from '../../commands/interface-manager/DeadDocumentMatrix';
+import {
+    defineMatrixInterfaceAdaptor,
+    MatrixContext,
+    MatrixInterfaceAdaptor,
+} from "../../commands/interface-manager/MatrixInterfaceAdaptor";
+import { MatrixSendClient } from "../../MatrixEmitter";
+import { UnstartedMjolnir } from "../MjolnirManager";
+import {
+    BaseFunction,
+    defineInterfaceCommand,
+} from "../../commands/interface-manager/InterfaceCommand";
+import {
+    findPresentationType,
+    parameters,
+} from "../../commands/interface-manager/ParameterParsing";
+import { AppserviceBaseExecutor } from "./AppserviceCommandHandler";
+import { UserID } from "matrix-bot-sdk";
+import {
+    CommandError,
+    CommandResult,
+} from "../../commands/interface-manager/Validation";
+import { tickCrossRenderer } from "../../commands/interface-manager/MatrixHelpRenderer";
+import { JSXFactory } from "../../commands/interface-manager/JSXFactory";
+import { renderMatrixAndSend } from "../../commands/interface-manager/DeadDocumentMatrix";
 
 /**
  * There is ovbiously something we're doing very wrong here,
@@ -28,17 +41,25 @@ const listUnstarted = defineInterfaceCommand<AppserviceBaseExecutor>({
     designator: ["list", "unstarted"],
     table: "appservice bot",
     parameters: parameters([]),
-    command: async function() {
-        return CommandResult.Ok(this.appservice.mjolnirManager.getUnstartedMjolnirs());
+    command: async function () {
+        return CommandResult.Ok(
+            this.appservice.mjolnirManager.getUnstartedMjolnirs(),
+        );
     },
-    summary: "List any Mjolnir that failed to start."
+    summary: "List any Mjolnir that failed to start.",
 });
 
 // Hmm what if leter on we used OL and the numbers could be a presentation type
 // and be used similar to like #=1 and #1.
 defineMatrixInterfaceAdaptor({
     interfaceCommand: listUnstarted,
-    renderer: async function(this: MatrixInterfaceAdaptor<MatrixContext, BaseFunction>, client: MatrixSendClient, commandRoomId: string, event: any, result: CommandResult<UnstartedMjolnir[]>) {
+    renderer: async function (
+        this: MatrixInterfaceAdaptor<MatrixContext, BaseFunction>,
+        client: MatrixSendClient,
+        commandRoomId: string,
+        event: any,
+        result: CommandResult<UnstartedMjolnir[]>,
+    ) {
         tickCrossRenderer.call(this, client, commandRoomId, event, result); // don't await, it doesn't really matter.
         if (result.isErr()) {
             return; // just let the default handler deal with it.
@@ -48,23 +69,25 @@ defineMatrixInterfaceAdaptor({
             <root>
                 <b>Unstarted Mjolnir: {unstarted.length}</b>
                 <ul>
-                    {unstarted.map(mjolnir => {
-                        return <li>
-                            {mjolnir.mjolnirRecord.owner},
-                            <code>{mjolnir.mxid.toString()}</code>
-                            <code>{mjolnir.failCode}</code>:
-                            <br/>
-                            {mjolnir.cause}
-                        </li>
+                    {unstarted.map((mjolnir) => {
+                        return (
+                            <li>
+                                {mjolnir.mjolnirRecord.owner},
+                                <code>{mjolnir.mxid.toString()}</code>
+                                <code>{mjolnir.failCode}</code>:
+                                <br />
+                                {mjolnir.cause}
+                            </li>
+                        );
                     })}
                 </ul>
             </root>,
             commandRoomId,
             event,
-            client
+            client,
         );
-    }
-})
+    },
+});
 
 // We need a "default" adaptor that needs to be explicitly defined still
 // (since you need to know if you have not created an adaptor)
@@ -77,21 +100,29 @@ const restart = defineInterfaceCommand<AppserviceBaseExecutor>({
         {
             name: "mjolnir",
             acceptor: findPresentationType("UserID"),
-        }
+        },
     ]),
-    command: async(context, _keywords, mjolnirId: UserID): Promise<CommandResult<true>> => {
+    command: async (
+        context,
+        _keywords,
+        mjolnirId: UserID,
+    ): Promise<CommandResult<true>> => {
         const mjolnirManager = context.appservice.mjolnirManager;
-        const mjolnir = mjolnirManager.findUnstartedMjolnir(mjolnirId.localpart);
+        const mjolnir = mjolnirManager.findUnstartedMjolnir(
+            mjolnirId.localpart,
+        );
         if (mjolnir?.mjolnirRecord === undefined) {
-            return CommandError.Result(`We can't find the unstarted mjolnir ${mjolnirId}, is it running?`);
+            return CommandError.Result(
+                `We can't find the unstarted mjolnir ${mjolnirId}, is it running?`,
+            );
         }
         await mjolnirManager.startMjolnir(mjolnir?.mjolnirRecord);
         return CommandResult.Ok(true);
     },
-    summary: "Attempt to restart a Mjolnir."
-})
+    summary: "Attempt to restart a Mjolnir.",
+});
 
 defineMatrixInterfaceAdaptor({
     interfaceCommand: restart,
-    renderer: tickCrossRenderer
-})
+    renderer: tickCrossRenderer,
+});

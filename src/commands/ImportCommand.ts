@@ -31,12 +31,24 @@ import { EntityType } from "../models/ListRule";
 import PolicyList from "../models/PolicyList";
 
 // !mjolnir import <room ID> <shortcode>
-export async function execImportCommand(roomId: string, event: any, mjolnir: Mjolnir, parts: string[]) {
+export async function execImportCommand(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+    parts: string[],
+) {
     const importRoomId = await mjolnir.client.resolveRoom(parts[2]);
-    const list = mjolnir.policyListManager.lists.find(b => b.listShortcode === parts[3]) as PolicyList;
+    const list = mjolnir.policyListManager.lists.find(
+        (b) => b.listShortcode === parts[3],
+    ) as PolicyList;
     if (!list) {
         const errMessage = "Unable to find list - check your shortcode.";
-        const errReply = RichReply.createFor(roomId, event, errMessage, errMessage);
+        const errReply = RichReply.createFor(
+            roomId,
+            event,
+            errMessage,
+            errMessage,
+        );
         errReply["msgtype"] = "m.notice";
         mjolnir.client.sendMessage(roomId, errReply);
         return;
@@ -46,25 +58,41 @@ export async function execImportCommand(roomId: string, event: any, mjolnir: Mjo
 
     const state = await mjolnir.client.getRoomState(importRoomId);
     for (const stateEvent of state) {
-        const content = stateEvent['content'] || {};
+        const content = stateEvent["content"] || {};
         if (!content || Object.keys(content).length === 0) continue;
 
-        if (stateEvent['type'] === 'm.room.member' && stateEvent['state_key'] !== '') {
+        if (
+            stateEvent["type"] === "m.room.member" &&
+            stateEvent["state_key"] !== ""
+        ) {
             // Member event - check for ban
-            if (content['membership'] === 'ban') {
-                const reason = content['reason'] || '<no reason>';
+            if (content["membership"] === "ban") {
+                const reason = content["reason"] || "<no reason>";
 
-                await mjolnir.client.sendNotice(mjolnir.managementRoomId, `Adding user ${stateEvent['state_key']} to ban list`);
-                await list.banEntity(EntityType.RULE_USER, stateEvent['state_key'], reason);
+                await mjolnir.client.sendNotice(
+                    mjolnir.managementRoomId,
+                    `Adding user ${stateEvent["state_key"]} to ban list`,
+                );
+                await list.banEntity(
+                    EntityType.RULE_USER,
+                    stateEvent["state_key"],
+                    reason,
+                );
                 importedRules++;
             }
-        } else if (stateEvent['type'] === 'm.room.server_acl' && stateEvent['state_key'] === '') {
+        } else if (
+            stateEvent["type"] === "m.room.server_acl" &&
+            stateEvent["state_key"] === ""
+        ) {
             // ACL event - ban denied servers
-            if (!content['deny']) continue;
-            for (const server of content['deny']) {
+            if (!content["deny"]) continue;
+            for (const server of content["deny"]) {
                 const reason = "<no reason>";
 
-                await mjolnir.client.sendNotice(mjolnir.managementRoomId, `Adding server ${server} to ban list`);
+                await mjolnir.client.sendNotice(
+                    mjolnir.managementRoomId,
+                    `Adding server ${server} to ban list`,
+                );
 
                 await list.banEntity(EntityType.RULE_SERVER, server, reason);
                 importedRules++;
@@ -74,6 +102,6 @@ export async function execImportCommand(roomId: string, event: any, mjolnir: Mjo
 
     const message = `Imported ${importedRules} rules to ban list`;
     const reply = RichReply.createFor(roomId, event, message, message);
-    reply['msgtype'] = "m.notice";
+    reply["msgtype"] = "m.notice";
     await mjolnir.client.sendMessage(roomId, reply);
 }

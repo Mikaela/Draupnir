@@ -4,19 +4,32 @@
  */
 
 import { MatrixSendClient } from "../../MatrixEmitter";
-import { AbstractNode, DocumentNode, FringeWalker, NodeTag } from "./DeadDocument";
+import {
+    AbstractNode,
+    DocumentNode,
+    FringeWalker,
+    NodeTag,
+} from "./DeadDocument";
 import { HTML_RENDERER } from "./DeadDocumentHtml";
 import { MARKDOWN_RENDERER } from "./DeadDocumentMarkdown";
 import { PagedDuplexStream } from "./PagedDuplexStream";
 
-function checkEqual(node1: AbstractNode|undefined, node2: AbstractNode|undefined): true {
+function checkEqual(
+    node1: AbstractNode | undefined,
+    node2: AbstractNode | undefined,
+): true {
     if (!Object.is(node1, node2)) {
-        throw new TypeError('There is an implementation bug in one of the walker')
+        throw new TypeError(
+            "There is an implementation bug in one of the walker",
+        );
     }
     return true;
 }
 
-export type SendMatrixEventCB = (text: string, html: string) => Promise<string/*event id*/>;
+export type SendMatrixEventCB = (
+    text: string,
+    html: string,
+) => Promise<string /*event id*/>;
 
 /**
  * Render the `DocumentNode` to Matrix (in both HTML + Markdown) using the
@@ -26,12 +39,20 @@ export type SendMatrixEventCB = (text: string, html: string) => Promise<string/*
  * @param cb A callback that will send the text+html for a single event
  * to a Matrix room.
  */
-export async function renderMatrix(node: DocumentNode, cb: SendMatrixEventCB): Promise<string[]> {
-    const commitHook = (commitNode: DocumentNode, context: { output: PagedDuplexStream }) => {
+export async function renderMatrix(
+    node: DocumentNode,
+    cb: SendMatrixEventCB,
+): Promise<string[]> {
+    const commitHook = (
+        commitNode: DocumentNode,
+        context: { output: PagedDuplexStream },
+    ) => {
         context.output.commit(commitNode);
     };
     if (node.tag !== NodeTag.Root) {
-        throw new TypeError("Tried to render a node without a root, this will not be committable");
+        throw new TypeError(
+            "Tried to render a node without a root, this will not be committable",
+        );
     }
     const markdownOutput = new PagedDuplexStream();
     const markdownWalker = new FringeWalker(
@@ -53,21 +74,27 @@ export async function renderMatrix(node: DocumentNode, cb: SendMatrixEventCB): P
     let currentHtmlNode = htmlWalker.increment();
     checkEqual(currentHtmlNode, currentMarkdownNode);
     while (currentHtmlNode !== undefined) {
-        if (outputs.some(o => o.peekPage())) {
+        if (outputs.some((o) => o.peekPage())) {
             // Make sure that any outputs that have buffered input start a fresh page,
             // so that the same committed nodes end up in the same message.
-            outputs.filter(o => !o.peekPage()).forEach(o => o.ensureNewPage());
+            outputs
+                .filter((o) => !o.peekPage())
+                .forEach((o) => o.ensureNewPage());
             // Send the new pages as an event.
-            eventIds.push(await cb(markdownOutput.readPage()!, htmlOutput.readPage()!));
+            eventIds.push(
+                await cb(markdownOutput.readPage()!, htmlOutput.readPage()!),
+            );
         }
         // prepare next iteration
         currentMarkdownNode = markdownWalker.increment();
         currentHtmlNode = htmlWalker.increment();
         checkEqual(currentHtmlNode, currentMarkdownNode);
     }
-    outputs.forEach(o => o.ensureNewPage());
-    if (outputs.some(o => o.peekPage())) {
-        eventIds.push(await cb(markdownOutput.readPage()!, htmlOutput.readPage()!));
+    outputs.forEach((o) => o.ensureNewPage());
+    if (outputs.some((o) => o.peekPage())) {
+        eventIds.push(
+            await cb(markdownOutput.readPage()!, htmlOutput.readPage()!),
+        );
     }
     return eventIds;
 }
@@ -79,37 +106,48 @@ export async function renderMatrix(node: DocumentNode, cb: SendMatrixEventCB): P
  * @param event An event to reply to, if any.
  * @param client A MatrixClient to send the events with.
  */
-export async function renderMatrixAndSend(node: DocumentNode, roomId: string, event: any|undefined, client: MatrixSendClient, additionalContent = {}): Promise<string[]> {
+export async function renderMatrixAndSend(
+    node: DocumentNode,
+    roomId: string,
+    event: any | undefined,
+    client: MatrixSendClient,
+    additionalContent = {},
+): Promise<string[]> {
     const baseContent = (text: string, html: string) => {
         return {
             msgtype: "m.notice",
             body: text,
             format: "org.matrix.custom.html",
             formatted_body: html,
-        }
+        };
     };
     const renderInitialReply = async (text: string, html: string) => {
         return await client.sendMessage(roomId, {
             ...baseContent(text, html),
             ...additionalContent,
-            ...event === undefined
+            ...(event === undefined
                 ? {} // if they don't supply a reply just send a top level event.
-                : { "m.relates_to": {
-                        "m.in_reply_to": {
-                            "event_id": event['event_id']
-                        }
-                    }
-                }
-        })
+                : {
+                      "m.relates_to": {
+                          "m.in_reply_to": {
+                              event_id: event["event_id"],
+                          },
+                      },
+                  }),
+        });
     };
-    const renderThreadReply = async (eventId: string, text: string, html: string) => {
+    const renderThreadReply = async (
+        eventId: string,
+        text: string,
+        html: string,
+    ) => {
         return await client.sendMessage(roomId, {
             ...baseContent(text, html),
             "m.relates_to": {
-                "rel_type": "m.thread",
-                "event_id": eventId,
-            }
-        })
+                rel_type: "m.thread",
+                event_id: eventId,
+            },
+        });
     };
     let initialReplyId: string | undefined = undefined;
     return await renderMatrix(node, async (text: string, html: string) => {

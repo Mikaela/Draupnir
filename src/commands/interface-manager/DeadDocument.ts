@@ -27,45 +27,45 @@ import { SuperCoolStream } from "./CommandReader";
  */
 
 export interface AbstractNode {
-    readonly parent: DocumentNode|null;
+    readonly parent: DocumentNode | null;
     readonly leafNode: boolean;
     readonly tag: NodeTag;
 }
 
 export interface DocumentNode extends AbstractNode {
     readonly leafNode: false;
-    attributeMap: Map<string, any>,
-    addChild<Node extends DocumentNode|LeafNode>(node: Node): Node
-    getChildren(): (DocumentNode|LeafNode)[]
-    getFirstChild(): DocumentNode|LeafNode|undefined;
+    attributeMap: Map<string, any>;
+    addChild<Node extends DocumentNode | LeafNode>(node: Node): Node;
+    getChildren(): (DocumentNode | LeafNode)[];
+    getFirstChild(): DocumentNode | LeafNode | undefined;
 }
 
 export interface LeafNode extends AbstractNode {
-    readonly parent: DocumentNode,
-    readonly data: string,
-    readonly leafNode: true,
+    readonly parent: DocumentNode;
+    readonly data: string;
+    readonly leafNode: true;
 }
 
 // These are NOT necessarily HTML tags.
 export enum NodeTag {
-    TextNode = 'text',
-    InlineCode = 'code',
-    PreformattedText = 'pre',
-    Root = 'root',
-    Strong = 'strong',
-    Emphasis = 'em',
-    Paragraph = 'p',
-    HeadingOne = 'h1',
-    UnorderedList = 'ul',
-    OrderedList = 'ol',
-    ListItem = 'li',
-    LineBreak = 'br',
-    BoldFace = 'b',
-    ItalicFace = 'i',
-    Anchor = 'a',
-    Fragment = 'fragment',
-    Details = 'details',
-    Summary = 'summary',
+    TextNode = "text",
+    InlineCode = "code",
+    PreformattedText = "pre",
+    Root = "root",
+    Strong = "strong",
+    Emphasis = "em",
+    Paragraph = "p",
+    HeadingOne = "h1",
+    UnorderedList = "ul",
+    OrderedList = "ol",
+    ListItem = "li",
+    LineBreak = "br",
+    BoldFace = "b",
+    ItalicFace = "i",
+    Anchor = "a",
+    Fragment = "fragment",
+    Details = "details",
+    Summary = "summary",
 }
 
 /**
@@ -74,11 +74,14 @@ export enum NodeTag {
  * where we can use ad-hoc mixins.
  */
 interface DeadDocumentNode extends DocumentNode {
-    children: (DocumentNode|LeafNode)[];
-    attributeMap: Map<string, any>,
+    children: (DocumentNode | LeafNode)[];
+    attributeMap: Map<string, any>;
 }
 
-export function addChild<Node extends DocumentNode|LeafNode>(this: DeadDocumentNode, node: Node): Node {
+export function addChild<Node extends DocumentNode | LeafNode>(
+    this: DeadDocumentNode,
+    node: Node,
+): Node {
     if (this.children.includes(node)) {
         return node;
     }
@@ -86,11 +89,15 @@ export function addChild<Node extends DocumentNode|LeafNode>(this: DeadDocumentN
     return node;
 }
 
-export function getChildren(this: DeadDocumentNode): (DocumentNode|LeafNode)[] {
+export function getChildren(
+    this: DeadDocumentNode,
+): (DocumentNode | LeafNode)[] {
     return [...this.children];
 }
 
-export function getFirstChild(this: DeadDocumentNode): DocumentNode|LeafNode|undefined {
+export function getFirstChild(
+    this: DeadDocumentNode,
+): DocumentNode | LeafNode | undefined {
     return this.children.at(0);
 }
 
@@ -108,8 +115,11 @@ export function makeDocumentNode(tag: NodeTag, parent = null): DocumentNode {
     return node;
 }
 
-
-export function makeLeafNode<LeafInterface extends LeafNode>(tag: LeafInterface['tag'], parent: DocumentNode, data: string): LeafInterface {
+export function makeLeafNode<LeafInterface extends LeafNode>(
+    tag: LeafInterface["tag"],
+    parent: DocumentNode,
+    data: string,
+): LeafInterface {
     const leaf = { tag, parent, data, leafNode: true } as LeafInterface;
     parent.addChild(leaf);
     return leaf;
@@ -122,23 +132,37 @@ export interface TextNode extends LeafNode {
 // lol no mixins so addChild  can't be protected on DocumentNode
 // it's a yoke.
 export function addText(this: DocumentNode, data: string): TextNode {
-    return this.addChild(makeLeafNode<TextNode>(NodeTag.TextNode, this, data))
+    return this.addChild(makeLeafNode<TextNode>(NodeTag.TextNode, this, data));
 }
 
 export interface InlineCodeNode extends LeafNode {
     readonly tag: NodeTag.InlineCode;
 }
 
-export function addInlineCode(this: DocumentNode, data: string): InlineCodeNode {
-    return this.addChild(makeLeafNode<InlineCodeNode>(NodeTag.InlineCode, this, data));
+export function addInlineCode(
+    this: DocumentNode,
+    data: string,
+): InlineCodeNode {
+    return this.addChild(
+        makeLeafNode<InlineCodeNode>(NodeTag.InlineCode, this, data),
+    );
 }
 
 export interface PreformattedTextNode extends LeafNode {
     readonly tag: NodeTag.PreformattedText;
 }
 
-export function addPreformattedText(this: DocumentNode, data: string): PreformattedTextNode {
-    return this.addChild(makeLeafNode<PreformattedTextNode>(NodeTag.PreformattedText, this, data));
+export function addPreformattedText(
+    this: DocumentNode,
+    data: string,
+): PreformattedTextNode {
+    return this.addChild(
+        makeLeafNode<PreformattedTextNode>(
+            NodeTag.PreformattedText,
+            this,
+            data,
+        ),
+    );
 }
 
 /**
@@ -146,14 +170,14 @@ export function addPreformattedText(this: DocumentNode, data: string): Preformat
  */
 
 export enum FringeType {
-    Pre = 'pre',
-    Leaf = 'leaf',
-    Post = 'post',
+    Pre = "pre",
+    Leaf = "leaf",
+    Post = "post",
 }
 
 type AnnotatedFringeNode = {
-    type: FringeType,
-    node: DocumentNode|LeafNode
+    type: FringeType;
+    node: DocumentNode | LeafNode;
 };
 
 type Flat = AnnotatedFringeNode[];
@@ -166,13 +190,15 @@ function fringeInternalNode(node: DocumentNode, flat: Flat): Flat {
     if (node.getChildren().length === 0) {
         return flat;
     } else {
-        return node.getChildren().reduce((previous: Flat, child: DocumentNode|LeafNode) => {
-            return fringe(child, previous);
-        }, flat);
+        return node
+            .getChildren()
+            .reduce((previous: Flat, child: DocumentNode | LeafNode) => {
+                return fringe(child, previous);
+            }, flat);
     }
 }
 
-function fringe(node: DocumentNode|LeafNode, flat: Flat = []): Flat {
+function fringe(node: DocumentNode | LeafNode, flat: Flat = []): Flat {
     if (node.leafNode) {
         flat.push({ type: FringeType.Leaf, node });
         return flat;
@@ -183,24 +209,44 @@ function fringe(node: DocumentNode|LeafNode, flat: Flat = []): Flat {
         return flat;
     }
 }
-export type FringeLeafRenderFunction<Context> = (tag: NodeTag, node: LeafNode, context: Context) => void
-export type FringeInnerRenderFunction<Context> = (type: FringeType, node: DocumentNode, context: Context, environment: TagDynamicEnvironment) => void;
+export type FringeLeafRenderFunction<Context> = (
+    tag: NodeTag,
+    node: LeafNode,
+    context: Context,
+) => void;
+export type FringeInnerRenderFunction<Context> = (
+    type: FringeType,
+    node: DocumentNode,
+    context: Context,
+    environment: TagDynamicEnvironment,
+) => void;
 
 export interface FringeRenderer<Context> {
-    getLeafRenderer(tag: NodeTag): FringeLeafRenderFunction<Context>
+    getLeafRenderer(tag: NodeTag): FringeLeafRenderFunction<Context>;
     getPreRenderer(tag: NodeTag): FringeInnerRenderFunction<Context>;
     getPostRenderer(tag: NodeTag): FringeInnerRenderFunction<Context>;
 }
 
 export class SimpleFringeRenderer<Context> implements FringeRenderer<Context> {
-    private readonly preRenderers = new Map<NodeTag, FringeInnerRenderFunction<Context>>();
-    private readonly leafRenderers = new Map<NodeTag, FringeLeafRenderFunction<Context>>();
-    private readonly postRenderers = new Map<NodeTag, FringeInnerRenderFunction<Context>>();
-    constructor() {
+    private readonly preRenderers = new Map<
+        NodeTag,
+        FringeInnerRenderFunction<Context>
+    >();
+    private readonly leafRenderers = new Map<
+        NodeTag,
+        FringeLeafRenderFunction<Context>
+    >();
+    private readonly postRenderers = new Map<
+        NodeTag,
+        FringeInnerRenderFunction<Context>
+    >();
+    constructor() {}
 
-    }
-
-    private getRenderer<T>(table: Map<NodeTag, T>, type: FringeType, tag: NodeTag): T {
+    private getRenderer<T>(
+        table: Map<NodeTag, T>,
+        type: FringeType,
+        tag: NodeTag,
+    ): T {
         const entry = table.get(tag);
         if (entry) {
             return entry;
@@ -220,30 +266,68 @@ export class SimpleFringeRenderer<Context> implements FringeRenderer<Context> {
         return this.getRenderer(this.postRenderers, FringeType.Post, tag);
     }
 
-    public internRenderer<T extends FringeInnerRenderFunction<Context>|FringeLeafRenderFunction<Context>>(type: FringeType, tag: NodeTag, table: Map<NodeTag, T>, renderer: T): void {
+    public internRenderer<
+        T extends
+            | FringeInnerRenderFunction<Context>
+            | FringeLeafRenderFunction<Context>,
+    >(
+        type: FringeType,
+        tag: NodeTag,
+        table: Map<NodeTag, T>,
+        renderer: T,
+    ): void {
         if (table.has(tag)) {
-            throw new TypeError(`There is already a renderer registered for ${type} ${tag}`);
+            throw new TypeError(
+                `There is already a renderer registered for ${type} ${tag}`,
+            );
         }
         table.set(tag, renderer);
     }
 
-    public registerRenderer<T extends FringeInnerRenderFunction<Context>|FringeLeafRenderFunction<Context>>(type: FringeType, tag: NodeTag, renderer: T): SimpleFringeRenderer<Context> {
+    public registerRenderer<
+        T extends
+            | FringeInnerRenderFunction<Context>
+            | FringeLeafRenderFunction<Context>,
+    >(
+        type: FringeType,
+        tag: NodeTag,
+        renderer: T,
+    ): SimpleFringeRenderer<Context> {
         // The casting in here is evil. Not sure how to fix it.
         switch (type) {
             case FringeType.Pre:
-                this.internRenderer<T>(type, tag, this.preRenderers as Map<NodeTag, T>, renderer);
+                this.internRenderer<T>(
+                    type,
+                    tag,
+                    this.preRenderers as Map<NodeTag, T>,
+                    renderer,
+                );
                 break;
             case FringeType.Leaf:
-                this.internRenderer<T>(type, tag, this.leafRenderers as Map<NodeTag, T>, renderer);
+                this.internRenderer<T>(
+                    type,
+                    tag,
+                    this.leafRenderers as Map<NodeTag, T>,
+                    renderer,
+                );
                 break;
             case FringeType.Post:
-                this.internRenderer<T>(type, tag, this.postRenderers as Map<NodeTag, T>, renderer);
+                this.internRenderer<T>(
+                    type,
+                    tag,
+                    this.postRenderers as Map<NodeTag, T>,
+                    renderer,
+                );
                 break;
         }
         return this;
     }
 
-    public registerInnerNode(tag: NodeTag, pre: FringeInnerRenderFunction<Context>, post: FringeInnerRenderFunction<Context>): SimpleFringeRenderer<Context> {
+    public registerInnerNode(
+        tag: NodeTag,
+        pre: FringeInnerRenderFunction<Context>,
+        post: FringeInnerRenderFunction<Context>,
+    ): SimpleFringeRenderer<Context> {
         this.internRenderer(FringeType.Pre, tag, this.preRenderers, pre);
         this.internRenderer(FringeType.Post, tag, this.postRenderers, post);
         return this;
@@ -259,11 +343,12 @@ const COMMITTABLE_NODES = new Set([
     NodeTag.Root,
 ]);
 
-class FringeStream extends SuperCoolStream<Flat> {
+class FringeStream extends SuperCoolStream<Flat> {}
 
-}
-
-export type CommitHook<Context> = (node: DocumentNode, context: Context) => void;
+export type CommitHook<Context> = (
+    node: DocumentNode,
+    context: Context,
+) => void;
 
 /**
  * The FringeWalker allows for the implementation of an incremental
@@ -279,35 +364,52 @@ export class FringeWalker<Context> {
         public readonly root: DocumentNode,
         private readonly context: Context,
         private readonly renderer: FringeRenderer<Context>,
-        private readonly commitHook: CommitHook<Context>
+        private readonly commitHook: CommitHook<Context>,
     ) {
         this.stream = new FringeStream(fringe(root));
     }
 
-    public increment(): DocumentNode|undefined {
+    public increment(): DocumentNode | undefined {
         const renderInnerNode = (node: AnnotatedFringeNode) => {
             if (node.node.leafNode) {
-                throw new TypeError("Leaf nodes should not be in the Pre/Post position");
+                throw new TypeError(
+                    "Leaf nodes should not be in the Pre/Post position",
+                );
             }
-            const renderer = node.type === FringeType.Pre
-                ? this.renderer.getPreRenderer(node.node.tag)
-                : this.renderer.getPostRenderer(node.node.tag);
-            renderer(node.type, node.node, this.context, this.dynamicEnvironment);
+            const renderer =
+                node.type === FringeType.Pre
+                    ? this.renderer.getPreRenderer(node.node.tag)
+                    : this.renderer.getPostRenderer(node.node.tag);
+            renderer(
+                node.type,
+                node.node,
+                this.context,
+                this.dynamicEnvironment,
+            );
             return node.node;
-        }
+        };
         const postNode = (node: AnnotatedFringeNode): DocumentNode => {
             if (node.node.leafNode) {
-                throw new TypeError("Leaf nodes should not be in the Pre/Post position");
+                throw new TypeError(
+                    "Leaf nodes should not be in the Pre/Post position",
+                );
             }
             renderInnerNode(node);
             this.dynamicEnvironment.pop(node.node);
             return node.node;
-        }
-        const isAnnotatedNodeCommittable = (node: AnnotatedFringeNode): boolean => {
-            return COMMITTABLE_NODES.has(node.node.tag)
-                && node.type === FringeType.Post;
-        }
-        while (this.stream.peekItem() && !isAnnotatedNodeCommittable(this.stream.peekItem())) {
+        };
+        const isAnnotatedNodeCommittable = (
+            node: AnnotatedFringeNode,
+        ): boolean => {
+            return (
+                COMMITTABLE_NODES.has(node.node.tag) &&
+                node.type === FringeType.Post
+            );
+        };
+        while (
+            this.stream.peekItem() &&
+            !isAnnotatedNodeCommittable(this.stream.peekItem())
+        ) {
             const annotatedNode = this.stream.readItem();
             switch (annotatedNode.type) {
                 case FringeType.Pre:
@@ -318,13 +420,20 @@ export class FringeWalker<Context> {
                     break;
                 case FringeType.Leaf:
                     if (annotatedNode.node.leafNode !== true) {
-                        throw new TypeError("Leaf nodes should not be marked as an inner node");
+                        throw new TypeError(
+                            "Leaf nodes should not be marked as an inner node",
+                        );
                     }
-                    this.renderer.getLeafRenderer(annotatedNode.node.tag)
-                        (annotatedNode.node.tag, annotatedNode.node as unknown as LeafNode, this.context);
+                    this.renderer.getLeafRenderer(annotatedNode.node.tag)(
+                        annotatedNode.node.tag,
+                        annotatedNode.node as unknown as LeafNode,
+                        this.context,
+                    );
                     break;
                 default:
-                    throw new TypeError(`Uknown fringe type ${annotatedNode.type}`);
+                    throw new TypeError(
+                        `Uknown fringe type ${annotatedNode.type}`,
+                    );
             }
         }
         if (this.stream.peekItem() === undefined) {
@@ -340,10 +449,8 @@ export class TagDynamicEnvironmentEntry {
     constructor(
         public readonly node: DocumentNode,
         public value: any,
-        public readonly previous: undefined|TagDynamicEnvironmentEntry,
-    ) {
-
-    }
+        public readonly previous: undefined | TagDynamicEnvironmentEntry,
+    ) {}
 }
 
 /**
@@ -365,7 +472,10 @@ export class TagDynamicEnvironmentEntry {
  * as the restoration of previous values can be handled automatically for us.
  */
 export class TagDynamicEnvironment {
-    private readonly environments = new Map<string, TagDynamicEnvironmentEntry|undefined>();
+    private readonly environments = new Map<
+        string,
+        TagDynamicEnvironmentEntry | undefined
+    >();
 
     public read(variableName: string): any {
         const variableEntry = this.environments.get(variableName);
@@ -379,9 +489,9 @@ export class TagDynamicEnvironment {
     public write(variableName: string, value: any): any {
         const variableEntry = this.environments.get(variableName);
         if (variableEntry) {
-            return variableEntry.value = value;
+            return (variableEntry.value = value);
         } else {
-            throw new TypeError(`The variable ${variableName} is unbound.`)
+            throw new TypeError(`The variable ${variableName} is unbound.`);
         }
     }
 
@@ -389,7 +499,7 @@ export class TagDynamicEnvironment {
         const entry = this.environments.get(variableName);
         const newEntry = new TagDynamicEnvironmentEntry(node, value, entry);
         this.environments.set(variableName, newEntry);
-        return value
+        return value;
     }
 
     public pop(node: DocumentNode): void {

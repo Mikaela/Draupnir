@@ -27,19 +27,34 @@ limitations under the License.
 
 import { MjolnirContext } from "./CommandHandler";
 import { renderMatrixAndSend } from "./interface-manager/DeadDocumentMatrix";
-import { defineInterfaceCommand, findTableCommand } from "./interface-manager/InterfaceCommand";
+import {
+    defineInterfaceCommand,
+    findTableCommand,
+} from "./interface-manager/InterfaceCommand";
 import { JSXFactory } from "./interface-manager/JSXFactory";
 import { tickCrossRenderer } from "./interface-manager/MatrixHelpRenderer";
-import { defineMatrixInterfaceAdaptor, MatrixContext, MatrixInterfaceAdaptor } from "./interface-manager/MatrixInterfaceAdaptor";
+import {
+    defineMatrixInterfaceAdaptor,
+    MatrixContext,
+    MatrixInterfaceAdaptor,
+} from "./interface-manager/MatrixInterfaceAdaptor";
 import { MatrixRoomReference } from "./interface-manager/MatrixRoomReference";
-import { findPresentationType, parameters, union } from "./interface-manager/ParameterParsing";
+import {
+    findPresentationType,
+    parameters,
+    union,
+} from "./interface-manager/ParameterParsing";
 import { CommandResult } from "./interface-manager/Validation";
 import { UserID } from "matrix-bot-sdk";
 import { MatrixSendClient } from "../MatrixEmitter";
 import { ListRule } from "../models/ListRule";
 
 async function renderListMatches(
-    this: MatrixInterfaceAdaptor<MatrixContext>, client: MatrixSendClient, commandRoomId: string, event: any, result: CommandResult<ListMatches[]>
+    this: MatrixInterfaceAdaptor<MatrixContext>,
+    client: MatrixSendClient,
+    commandRoomId: string,
+    event: any,
+    result: CommandResult<ListMatches[]>,
 ) {
     if (result.isErr()) {
         return await tickCrossRenderer.call(this, ...arguments);
@@ -48,40 +63,56 @@ async function renderListMatches(
     if (lists.length === 0) {
         return await renderMatrixAndSend(
             <root>No policy lists configured</root>,
-            commandRoomId, event, client
-        )
+            commandRoomId,
+            event,
+            client,
+        );
     }
     return await renderMatrixAndSend(
         <root>
-            <b>Rules currently in use:</b><br/>
-            {lists.map(list => renderListRules(list))}
+            <b>Rules currently in use:</b>
+            <br />
+            {lists.map((list) => renderListRules(list))}
         </root>,
-        commandRoomId, event, client
-    )
+        commandRoomId,
+        event,
+        client,
+    );
 }
 
 function renderListRules(list: ListMatches) {
     const renderRuleSummary = (rule: ListRule, entityDescription: string) => {
-        return <li>
-            {entityDescription} (<code>{rule.recommendation}</code>): <code>{rule.entity}</code> ({rule.reason})
-        </li>
+        return (
+            <li>
+                {entityDescription} (<code>{rule.recommendation}</code>):{" "}
+                <code>{rule.entity}</code> ({rule.reason})
+            </li>
+        );
     };
-    return <fragment>
-        <a href={list.roomRef}>{list.roomId}</a>
-        {list.shortcode ? `(shortcode: ${list.shortcode})` : ''}:<br/>
-        <ul>
-            {list.matches.length === 0
-                ? <li><i>No rules</i></li>
-                : list.matches.map(rule => renderRuleSummary(rule, rule.kind))}
-        </ul>
-    </fragment>
+    return (
+        <fragment>
+            <a href={list.roomRef}>{list.roomId}</a>
+            {list.shortcode ? `(shortcode: ${list.shortcode})` : ""}:<br />
+            <ul>
+                {list.matches.length === 0 ? (
+                    <li>
+                        <i>No rules</i>
+                    </li>
+                ) : (
+                    list.matches.map((rule) =>
+                        renderRuleSummary(rule, rule.kind),
+                    )
+                )}
+            </ul>
+        </fragment>
+    );
 }
 
 interface ListMatches {
-    shortcode: string,
-    roomRef: string,
-    roomId: string,
-    matches: ListRule[]
+    shortcode: string;
+    roomRef: string;
+    roomId: string;
+    matches: ListRule[];
 }
 
 defineInterfaceCommand({
@@ -90,24 +121,23 @@ defineInterfaceCommand({
     parameters: parameters([]),
     command: async function (this: MjolnirContext) {
         return CommandResult.Ok(
-            this.mjolnir.policyListManager.lists
-                .map(list => {
-                    return {
-                        shortcode: list.listShortcode,
-                        roomRef: list.roomRef,
-                        roomId: list.roomId,
-                        matches: list.allRules
-                    }
-                })
+            this.mjolnir.policyListManager.lists.map((list) => {
+                return {
+                    shortcode: list.listShortcode,
+                    roomRef: list.roomRef,
+                    roomId: list.roomId,
+                    matches: list.allRules,
+                };
+            }),
         );
     },
-    summary: "Lists the rules currently in use by Mjolnir."
-})
+    summary: "Lists the rules currently in use by Mjolnir.",
+});
 
 defineMatrixInterfaceAdaptor({
     interfaceCommand: findTableCommand("mjolnir", "rules"),
-    renderer: renderListMatches
-})
+    renderer: renderListMatches,
+});
 
 defineInterfaceCommand({
     designator: ["rules", "matching"],
@@ -119,29 +149,31 @@ defineInterfaceCommand({
                 findPresentationType("UserID"),
                 findPresentationType("MatrixRoomReference"),
                 findPresentationType("string"),
-            )
-        }
+            ),
+        },
     ]),
     command: async function (
-        this: MjolnirContext, _keywords, entity: string|UserID|MatrixRoomReference
+        this: MjolnirContext,
+        _keywords,
+        entity: string | UserID | MatrixRoomReference,
     ): Promise<CommandResult<ListMatches[]>> {
         return CommandResult.Ok(
-            this.mjolnir.policyListManager.lists
-                .map(list => {
-                    return {
-                        shortcode: list.listShortcode,
-                        roomRef: list.roomRef,
-                        roomId: list.roomId,
-                        matches: list.rulesMatchingEntity(entity.toString())
-                    }
-                })
+            this.mjolnir.policyListManager.lists.map((list) => {
+                return {
+                    shortcode: list.listShortcode,
+                    roomRef: list.roomRef,
+                    roomId: list.roomId,
+                    matches: list.rulesMatchingEntity(entity.toString()),
+                };
+            }),
         );
     },
-    summary: "Lists the rules in use that will match this entity e.g. `!rules matching @foo:example.com` will show all the user and server rules, including globs, that match this user"
-})
+    summary:
+        "Lists the rules in use that will match this entity e.g. `!rules matching @foo:example.com` will show all the user and server rules, including globs, that match this user",
+});
 
 // I'm pretty sure that both commands could merge and use the same rendeer.
 defineMatrixInterfaceAdaptor({
     interfaceCommand: findTableCommand("mjolnir", "rules", "matching"),
-    renderer: renderListMatches
-})
+    renderer: renderListMatches,
+});

@@ -32,7 +32,6 @@ import RuleServer from "../models/RuleServer";
 import { ReportManager } from "../report/ReportManager";
 import { IConfig } from "../config";
 
-
 /**
  * A common prefix for all web-exposed APIs.
  */
@@ -44,7 +43,11 @@ export class WebAPIs {
     private webController: express.Express = express();
     private httpServer?: Server;
 
-    constructor(private reportManager: ReportManager, private readonly config: IConfig, private readonly ruleServer: RuleServer|null) {
+    constructor(
+        private reportManager: ReportManager,
+        private readonly config: IConfig,
+        private readonly ruleServer: RuleServer | null,
+    ) {
         // Setup JSON parsing.
         this.webController.use(express.json());
     }
@@ -56,28 +59,61 @@ export class WebAPIs {
         if (!this.config.web.enabled) {
             return;
         }
-        this.httpServer = this.webController.listen(this.config.web.port, this.config.web.address);
+        this.httpServer = this.webController.listen(
+            this.config.web.port,
+            this.config.web.address,
+        );
 
         // configure /report API.
         if (this.config.web.abuseReporting.enabled) {
-            console.log(`configuring ${API_PREFIX}/report/:room_id/:event_id...`);
-            this.webController.options(`${API_PREFIX}/report/:room_id/:event_id`, async (request, response) => {
-                // reply with CORS options
-                response.header("Access-Control-Allow-Origin", "*");
-                response.header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Authorization, Date");
-                response.header("Access-Control-Allow-Methods", "POST, OPTIONS");
-                response.status(200);
-                return response.send();
-            });
-            this.webController.post(`${API_PREFIX}/report/:room_id/:event_id`, async (request, response) => {
-                console.debug(`Received a message on ${API_PREFIX}/report/:room_id/:event_id`, request.params);
-                // set CORS headers for the response
-                response.header("Access-Control-Allow-Origin", "*");
-                response.header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, Authorization, Date");
-                response.header("Access-Control-Allow-Methods", "POST, OPTIONS");
-                await this.handleReport({ request, response, roomId: request.params.room_id, eventId: request.params.event_id })
-            });
-            console.log(`configuring ${API_PREFIX}/report/:room_id/:event_id... DONE`);
+            console.log(
+                `configuring ${API_PREFIX}/report/:room_id/:event_id...`,
+            );
+            this.webController.options(
+                `${API_PREFIX}/report/:room_id/:event_id`,
+                async (request, response) => {
+                    // reply with CORS options
+                    response.header("Access-Control-Allow-Origin", "*");
+                    response.header(
+                        "Access-Control-Allow-Headers",
+                        "X-Requested-With, Content-Type, Authorization, Date",
+                    );
+                    response.header(
+                        "Access-Control-Allow-Methods",
+                        "POST, OPTIONS",
+                    );
+                    response.status(200);
+                    return response.send();
+                },
+            );
+            this.webController.post(
+                `${API_PREFIX}/report/:room_id/:event_id`,
+                async (request, response) => {
+                    console.debug(
+                        `Received a message on ${API_PREFIX}/report/:room_id/:event_id`,
+                        request.params,
+                    );
+                    // set CORS headers for the response
+                    response.header("Access-Control-Allow-Origin", "*");
+                    response.header(
+                        "Access-Control-Allow-Headers",
+                        "X-Requested-With, Content-Type, Authorization, Date",
+                    );
+                    response.header(
+                        "Access-Control-Allow-Methods",
+                        "POST, OPTIONS",
+                    );
+                    await this.handleReport({
+                        request,
+                        response,
+                        roomId: request.params.room_id,
+                        eventId: request.params.event_id,
+                    });
+                },
+            );
+            console.log(
+                `configuring ${API_PREFIX}/report/:room_id/:event_id... DONE`,
+            );
         }
 
         // configure ruleServer API.
@@ -87,11 +123,17 @@ export class WebAPIs {
             const updatesUrl = `${API_PREFIX}/ruleserver/updates`;
             LogService.info("WebAPIs", `configuring ${updatesUrl}...`);
             if (!this.ruleServer) {
-                throw new Error("The rule server to use has not been configured for the WebAPIs.");
+                throw new Error(
+                    "The rule server to use has not been configured for the WebAPIs.",
+                );
             }
             const ruleServer: RuleServer = this.ruleServer;
             this.webController.get(updatesUrl, async (request, response) => {
-                await this.handleRuleServerUpdate(ruleServer, { request, response, since: request.query.since as string});
+                await this.handleRuleServerUpdate(ruleServer, {
+                    request,
+                    response,
+                    since: request.query.since as string,
+                });
             });
             LogService.info("WebAPIs", `configuring ${updatesUrl}... DONE`);
         }
@@ -115,7 +157,17 @@ export class WebAPIs {
      * @param request The request. Its body SHOULD hold an object `{reason?: string}`
      * @param response The response. Used to propagate HTTP success/error.
      */
-    async handleReport({ roomId, eventId, request, response }: { roomId: string, eventId: string, request: express.Request, response: express.Response }) {
+    async handleReport({
+        roomId,
+        eventId,
+        request,
+        response,
+    }: {
+        roomId: string;
+        eventId: string;
+        request: express.Request;
+        response: express.Response;
+    }) {
         // To display any kind of useful information, we need
         //
         // 1. The reporter id;
@@ -131,11 +183,11 @@ export class WebAPIs {
                 let accessToken: string | undefined = undefined;
 
                 // Authentication mechanism 1: Request header.
-                let authorization = request.get('Authorization');
+                let authorization = request.get("Authorization");
 
                 if (authorization) {
                     [, accessToken] = AUTHORIZATION.exec(authorization)!;
-                } else if (typeof(request.query["access_token"]) === 'string') {
+                } else if (typeof request.query["access_token"] === "string") {
                     // Authentication mechanism 2: Access token as query parameter.
                     accessToken = request.query["access_token"];
                 } else {
@@ -172,9 +224,14 @@ export class WebAPIs {
                 //    so we are not extending the abilities of Mjölnir
                 // 3. We are avoiding the use of the Synapse Admin API to ensure that
                 //    this feature can work with all homeservers, not just Synapse.
-                let reporterClient = new MatrixClient(this.config.rawHomeserverUrl, accessToken);
+                let reporterClient = new MatrixClient(
+                    this.config.rawHomeserverUrl,
+                    accessToken,
+                );
                 reporterClient.start = () => {
-                    throw new Error("We MUST NEVER call start on the reporter client");
+                    throw new Error(
+                        "We MUST NEVER call start on the reporter client",
+                    );
                 };
 
                 reporterId = await reporterClient.getUserId();
@@ -196,17 +253,38 @@ export class WebAPIs {
             }
 
             let reason = request.body["reason"];
-            await this.reportManager.handleServerAbuseReport({ roomId, reporterId, event, reason });
+            await this.reportManager.handleServerAbuseReport({
+                roomId,
+                reporterId,
+                event,
+                reason,
+            });
 
             // Match the spec behavior of `/report`: return 200 and an empty JSON.
             response.status(200).json({});
         } catch (ex) {
-            console.warn("Error responding to an abuse report", roomId, eventId, ex);
+            console.warn(
+                "Error responding to an abuse report",
+                roomId,
+                eventId,
+                ex,
+            );
             response.status(503);
         }
     }
 
-    async handleRuleServerUpdate(ruleServer: RuleServer, { since, request, response }: { since: string, request: express.Request, response: express.Response }) {
+    async handleRuleServerUpdate(
+        ruleServer: RuleServer,
+        {
+            since,
+            request,
+            response,
+        }: {
+            since: string;
+            request: express.Request;
+            response: express.Response;
+        },
+    ) {
         // FIXME Have to do this because express sends keep alive by default and during tests.
         // The server will never be able to close because express never closes the sockets, only stops accepting new connections.
         // See https://github.com/matrix-org/mjolnir/issues/139#issuecomment-1012221479.
@@ -214,7 +292,12 @@ export class WebAPIs {
         try {
             response.json(ruleServer.getUpdates(since)).status(200);
         } catch (ex) {
-            LogService.error("WebAPIs", `Error responding to a rule server updates request`, since, ex);
+            LogService.error(
+                "WebAPIs",
+                `Error responding to a rule server updates request`,
+                since,
+                ex,
+            );
         }
     }
 }

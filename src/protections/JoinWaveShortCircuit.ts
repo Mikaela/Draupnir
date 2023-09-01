@@ -25,28 +25,30 @@ limitations under the License.
  * are NOT distributed, contributed, committed, or licensed under the Apache License.
  */
 
-import {Protection} from "./Protection";
-import {Mjolnir} from "../Mjolnir";
-import {NumberProtectionSetting} from "./ProtectionSettings";
-import {LogLevel} from "matrix-bot-sdk";
+import { Protection } from "./Protection";
+import { Mjolnir } from "../Mjolnir";
+import { NumberProtectionSetting } from "./ProtectionSettings";
+import { LogLevel } from "matrix-bot-sdk";
 
 const DEFAULT_MAX_PER_TIMESCALE = 50;
 const DEFAULT_TIMESCALE_MINUTES = 60;
 const ONE_MINUTE = 60_000; // 1min in ms
 
 export class JoinWaveShortCircuit extends Protection {
-    requiredStatePermissions = ["m.room.join_rules"]
+    requiredStatePermissions = ["m.room.join_rules"];
 
     private joinBuckets: {
         [roomId: string]: {
-            lastBucketStart: Date,
-            numberOfJoins: number,
-        }
+            lastBucketStart: Date;
+            numberOfJoins: number;
+        };
     } = {};
 
     settings = {
         maxPer: new NumberProtectionSetting(DEFAULT_MAX_PER_TIMESCALE),
-        timescaleMinutes: new NumberProtectionSetting(DEFAULT_TIMESCALE_MINUTES)
+        timescaleMinutes: new NumberProtectionSetting(
+            DEFAULT_TIMESCALE_MINUTES,
+        ),
     };
 
     constructor() {
@@ -58,11 +60,11 @@ export class JoinWaveShortCircuit extends Protection {
     }
 
     public get description(): string {
-        return "If X amount of users join in Y time, set the room to invite-only."
+        return "If X amount of users join in Y time, set the room to invite-only.";
     }
 
     public async handleEvent(mjolnir: Mjolnir, roomId: string, event: any) {
-        if (event['type'] !== 'm.room.member') {
+        if (event["type"] !== "m.room.member") {
             // Not a join/leave event.
             return;
         }
@@ -72,50 +74,77 @@ export class JoinWaveShortCircuit extends Protection {
             return;
         }
 
-        const userId = event['state_key'];
+        const userId = event["state_key"];
         if (!userId) {
             // Ill-formed event.
             return;
         }
 
-        const newMembership = event['content']['membership'];
-        const prevMembership = event['unsigned']?.['prev_content']?.['membership'] || null;
+        const newMembership = event["content"]["membership"];
+        const prevMembership =
+            event["unsigned"]?.["prev_content"]?.["membership"] || null;
 
         // We look at the previous membership to filter out profile changes
-        if (newMembership === 'join' && prevMembership !== "join") {
+        if (newMembership === "join" && prevMembership !== "join") {
             // A new join, fallthrough
         } else {
             return;
         }
 
         // If either the roomId bucket didn't exist, or the bucket has expired, create a new one
-        if (!this.joinBuckets[roomId] || this.hasExpired(this.joinBuckets[roomId].lastBucketStart)) {
+        if (
+            !this.joinBuckets[roomId] ||
+            this.hasExpired(this.joinBuckets[roomId].lastBucketStart)
+        ) {
             this.joinBuckets[roomId] = {
                 lastBucketStart: new Date(),
-                numberOfJoins: 0
-            }
+                numberOfJoins: 0,
+            };
         }
 
-        if (++this.joinBuckets[roomId].numberOfJoins >= this.settings.maxPer.value) {
-            await mjolnir.managementRoomOutput.logMessage(LogLevel.WARN, "JoinWaveShortCircuit", `Setting ${roomId} to invite-only as more than ${this.settings.maxPer.value} users have joined over the last ${this.settings.timescaleMinutes.value} minutes (since ${this.joinBuckets[roomId].lastBucketStart})`, roomId);
+        if (
+            ++this.joinBuckets[roomId].numberOfJoins >=
+            this.settings.maxPer.value
+        ) {
+            await mjolnir.managementRoomOutput.logMessage(
+                LogLevel.WARN,
+                "JoinWaveShortCircuit",
+                `Setting ${roomId} to invite-only as more than ${this.settings.maxPer.value} users have joined over the last ${this.settings.timescaleMinutes.value} minutes (since ${this.joinBuckets[roomId].lastBucketStart})`,
+                roomId,
+            );
 
             if (!mjolnir.config.noop) {
-                await mjolnir.client.sendStateEvent(roomId, "m.room.join_rules", "", {"join_rule": "invite"})
+                await mjolnir.client.sendStateEvent(
+                    roomId,
+                    "m.room.join_rules",
+                    "",
+                    { join_rule: "invite" },
+                );
             } else {
-                await mjolnir.managementRoomOutput.logMessage(LogLevel.WARN, "JoinWaveShortCircuit", `Tried to set ${roomId} to invite-only, but Mjolnir is running in no-op mode`, roomId);
+                await mjolnir.managementRoomOutput.logMessage(
+                    LogLevel.WARN,
+                    "JoinWaveShortCircuit",
+                    `Tried to set ${roomId} to invite-only, but Mjolnir is running in no-op mode`,
+                    roomId,
+                );
             }
         }
     }
 
     private hasExpired(at: Date): boolean {
-        return ((new Date()).getTime() - at.getTime()) > this.timescaleMilliseconds()
+        return (
+            new Date().getTime() - at.getTime() > this.timescaleMilliseconds()
+        );
     }
 
     private timescaleMilliseconds(): number {
-        return (this.settings.timescaleMinutes.value * ONE_MINUTE)
+        return this.settings.timescaleMinutes.value * ONE_MINUTE;
     }
 
-    public async statusCommand(mjolnir: Mjolnir, subcommand: string[]): Promise<{ html: string, text: string }> {
+    public async statusCommand(
+        mjolnir: Mjolnir,
+        subcommand: string[],
+    ): Promise<{ html: string; text: string }> {
         const withExpired = subcommand.includes("withExpired");
         const withStart = subcommand.includes("withStart");
 
@@ -130,8 +159,15 @@ export class JoinWaveShortCircuit extends Protection {
                 continue;
             }
 
-            const startText = withStart ? ` (since ${bucket.lastBucketStart})` : "";
-            const expiredText = isExpired ? ` (bucket expired since ${new Date(bucket.lastBucketStart.getTime() + this.timescaleMilliseconds())})` : "";
+            const startText = withStart
+                ? ` (since ${bucket.lastBucketStart})`
+                : "";
+            const expiredText = isExpired
+                ? ` (bucket expired since ${new Date(
+                      bucket.lastBucketStart.getTime() +
+                          this.timescaleMilliseconds(),
+                  )})`
+                : "";
 
             html += `<li><a href="https://matrix.to/#/${roomId}">${roomId}</a>: ${bucket.numberOfJoins} joins${startText}${expiredText}.</li>`;
             text += `* ${roomId}: ${bucket.numberOfJoins} joins${startText}${expiredText}.\n`;
@@ -142,6 +178,6 @@ export class JoinWaveShortCircuit extends Protection {
         return {
             html,
             text,
-        }
+        };
     }
 }

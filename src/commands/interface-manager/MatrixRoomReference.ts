@@ -6,8 +6,11 @@
 import { RoomAlias } from "matrix-bot-sdk";
 import { Permalinks } from "./Permalinks";
 
-type JoinRoom = (roomIdOrAlias: string, viaServers?: string[]) => Promise</*room id*/string>;
-type ResolveRoom = (roomIdOrAlias: string) => Promise</* room id */string>
+type JoinRoom = (
+    roomIdOrAlias: string,
+    viaServers?: string[],
+) => Promise</*room id*/ string>;
+type ResolveRoom = (roomIdOrAlias: string) => Promise</* room id */ string>;
 
 /**
  * This is a universal reference for a matrix room.
@@ -17,10 +20,8 @@ type ResolveRoom = (roomIdOrAlias: string) => Promise</* room id */string>
 export abstract class MatrixRoomReference {
     protected constructor(
         protected readonly reference: string,
-        protected readonly viaServers: string[] = []
-    ) {
-
-    }
+        protected readonly viaServers: string[] = [],
+    ) {}
 
     public toPermalink(): string {
         return Permalinks.forRoom(this.reference, this.viaServers);
@@ -30,12 +31,18 @@ export abstract class MatrixRoomReference {
         return new MatrixRoomAlias(alias);
     }
 
-    public static fromRoomId(roomId: string, viaServers: string[] = []): MatrixRoomID {
+    public static fromRoomId(
+        roomId: string,
+        viaServers: string[] = [],
+    ): MatrixRoomID {
         return new MatrixRoomID(roomId, viaServers);
     }
 
-    public static fromRoomIdOrAlias(roomIdOrAlias: string, viaServers: string[] = []): MatrixRoomReference {
-        if (roomIdOrAlias.startsWith('!')) {
+    public static fromRoomIdOrAlias(
+        roomIdOrAlias: string,
+        viaServers: string[] = [],
+    ): MatrixRoomReference {
+        if (roomIdOrAlias.startsWith("!")) {
             return new MatrixRoomID(roomIdOrAlias, viaServers);
         } else {
             return new MatrixRoomAlias(roomIdOrAlias, viaServers);
@@ -50,9 +57,14 @@ export abstract class MatrixRoomReference {
     public static fromPermalink(permalink: string): MatrixRoomReference {
         const parts = Permalinks.parseUrl(permalink);
         if (parts.roomIdOrAlias === undefined) {
-            throw new TypeError(`There is no room id or alias in the permalink ${permalink}`);
+            throw new TypeError(
+                `There is no room id or alias in the permalink ${permalink}`,
+            );
         }
-        return MatrixRoomReference.fromRoomIdOrAlias(parts.roomIdOrAlias, parts.viaServers);
+        return MatrixRoomReference.fromRoomIdOrAlias(
+            parts.roomIdOrAlias,
+            parts.viaServers,
+        );
     }
 
     /**
@@ -62,7 +74,9 @@ export abstract class MatrixRoomReference {
      * @param client A client that we can use to resolve the room alias.
      * @returns A new MatrixRoomReference that contains the room id.
      */
-    public async resolve(client: { resolveRoom: ResolveRoom }): Promise<MatrixRoomID> {
+    public async resolve(client: {
+        resolveRoom: ResolveRoom;
+    }): Promise<MatrixRoomID> {
         if (this instanceof MatrixRoomID) {
             return this;
         } else {
@@ -77,8 +91,10 @@ export abstract class MatrixRoomReference {
      * @param client A matrix client that should join the room.
      * @returns A MatrixRoomReference with the room id of the room which was joined.
      */
-    public async joinClient(client: { joinRoom: JoinRoom }): Promise<MatrixRoomID> {
-        if (this.reference.startsWith('!')) {
+    public async joinClient(client: {
+        joinRoom: JoinRoom;
+    }): Promise<MatrixRoomID> {
+        if (this.reference.startsWith("!")) {
             await client.joinRoom(this.reference, this.viaServers);
             return this;
         } else {
@@ -100,19 +116,13 @@ export abstract class MatrixRoomReference {
 }
 
 export class MatrixRoomID extends MatrixRoomReference {
-    public constructor(
-        reference: string,
-        viaServers: string[] = []
-    ) {
+    public constructor(reference: string, viaServers: string[] = []) {
         super(reference, viaServers);
     }
 }
 
 export class MatrixRoomAlias extends MatrixRoomReference {
-    public constructor(
-        reference: string,
-        viaServers: string[] = []
-    ) {
+    public constructor(reference: string, viaServers: string[] = []) {
         super(reference, viaServers);
     }
 }

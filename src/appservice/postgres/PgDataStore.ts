@@ -27,9 +27,8 @@ function getSchema(): SchemaUpdateFunction[] {
 }
 
 export class PgDataStore extends PostgresStore implements DataStore {
-
     constructor(connectionString: string) {
-        super(getSchema(), { url: connectionString })
+        super(getSchema(), { url: connectionString });
     }
 
     public async init(): Promise<void> {
@@ -41,7 +40,8 @@ export class PgDataStore extends PostgresStore implements DataStore {
     }
 
     public async list(): Promise<MjolnirRecord[]> {
-        const result = await this.sql`SELECT local_part, owner, management_room FROM mjolnir`;
+        const result = await this
+            .sql`SELECT local_part, owner, management_room FROM mjolnir`;
         if (!result.count) {
             return [];
         }
@@ -55,13 +55,17 @@ export class PgDataStore extends PostgresStore implements DataStore {
     }
 
     public async lookupByOwner(owner: string): Promise<MjolnirRecord[]> {
-        const result = await this.sql`SELECT local_part, owner, management_room FROM mjolnir
+        const result = await this
+            .sql`SELECT local_part, owner, management_room FROM mjolnir
         WHERE owner = ${owner}`;
         return result.flat() as MjolnirRecord[];
     }
 
-    public async lookupByLocalPart(localPart: string): Promise<MjolnirRecord[]> {
-        const result = await this.sql`SELECT local_part, owner, management_room FROM mjolnir
+    public async lookupByLocalPart(
+        localPart: string,
+    ): Promise<MjolnirRecord[]> {
+        const result = await this
+            .sql`SELECT local_part, owner, management_room FROM mjolnir
         WHERE local_part = ${localPart}`;
         return result.flat() as MjolnirRecord[];
     }

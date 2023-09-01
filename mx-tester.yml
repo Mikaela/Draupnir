@@ -31,7 +31,6 @@ modules:
       module: mjolnir.Module
       config: {}
 
-
 homeserver:
   # Basic configuration.
   server_name: localhost:9999

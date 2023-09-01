@@ -25,8 +25,14 @@ limitations under the License.
  * are NOT distributed, contributed, committed, or licensed under the Apache License.
  */
 
-import { defineInterfaceCommand, findTableCommand } from "./interface-manager/InterfaceCommand";
-import { findPresentationType, parameters } from "./interface-manager/ParameterParsing";
+import {
+    defineInterfaceCommand,
+    findTableCommand,
+} from "./interface-manager/InterfaceCommand";
+import {
+    findPresentationType,
+    parameters,
+} from "./interface-manager/ParameterParsing";
 import { MjolnirBaseExecutor, MjolnirContext } from "./CommandHandler";
 import { MatrixRoomReference } from "./interface-manager/MatrixRoomReference";
 import { UserID } from "matrix-bot-sdk";
@@ -35,13 +41,21 @@ import { tickCrossRenderer } from "./interface-manager/MatrixHelpRenderer";
 import { defineMatrixInterfaceAdaptor } from "./interface-manager/MatrixInterfaceAdaptor";
 
 async function hijackRoomCommand(
-    this: MjolnirContext, _keywords: void, room: MatrixRoomReference, user: UserID
+    this: MjolnirContext,
+    _keywords: void,
+    room: MatrixRoomReference,
+    user: UserID,
 ): Promise<CommandResult<void, CommandError>> {
     const isAdmin = await this.mjolnir.isSynapseAdmin();
     if (!this.mjolnir.config.admin?.enableMakeRoomAdminCommand || !isAdmin) {
-        return CommandError.Result("Either the command is disabled or Mjolnir is not running as homeserver administrator.")
+        return CommandError.Result(
+            "Either the command is disabled or Mjolnir is not running as homeserver administrator.",
+        );
     }
-    await this.mjolnir.makeUserRoomAdmin(room.toRoomIdOrAlias(), user.toString());
+    await this.mjolnir.makeUserRoomAdmin(
+        room.toRoomIdOrAlias(),
+        user.toString(),
+    );
     return CommandResult.Ok(undefined);
 }
 
@@ -51,18 +65,19 @@ defineInterfaceCommand<MjolnirBaseExecutor>({
     parameters: parameters([
         {
             name: "room",
-            acceptor: findPresentationType("MatrixRoomReference")
+            acceptor: findPresentationType("MatrixRoomReference"),
         },
         {
             name: "user",
-            acceptor: findPresentationType("UserID")
-        }
+            acceptor: findPresentationType("UserID"),
+        },
     ]),
     command: hijackRoomCommand,
-    summary: "Make the specified user the admin of a room via the synapse admin API"
-})
+    summary:
+        "Make the specified user the admin of a room via the synapse admin API",
+});
 
 defineMatrixInterfaceAdaptor({
     interfaceCommand: findTableCommand("synapse admin", "hijack", "room"),
-    renderer: tickCrossRenderer
-})
+    renderer: tickCrossRenderer,
+});

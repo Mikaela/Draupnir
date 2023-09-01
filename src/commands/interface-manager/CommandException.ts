@@ -12,12 +12,18 @@ export class CommandException extends CommandError {
     public readonly uuid = randomUUID();
 
     constructor(
-        public readonly exception: Error|unknown,
-        message: string) {
-        super(message)
+        public readonly exception: Error | unknown,
+        message: string,
+    ) {
+        super(message);
     }
 
-    public static Result<Ok>(message: string, options: { exception: Error }): CommandResult<Ok, CommandException> {
-        return CommandResult.Err(new CommandException(options.exception, message));
+    public static Result<Ok>(
+        message: string,
+        options: { exception: Error },
+    ): CommandResult<Ok, CommandException> {
+        return CommandResult.Err(
+            new CommandException(options.exception, message),
+        );
     }
 }

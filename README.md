@@ -65,16 +65,16 @@ this data from an admin API.
 This requires two configuration steps:
 
 1. In your Draupnir configuration file, typically `/etc/draupnir/config/production.yaml`, copy and paste the `web` section from `default.yaml`, if you don't have it yet (it appears with version 1.20) and set `enabled: true` for both `web` and
-`abuseReporting`.
+   `abuseReporting`.
 2. Setup a reverse proxy that will redirect requests from `^/_matrix/client/(r0|v3)/rooms/([^/]*)/report/(.*)$` to `http://host:port/api/1/report/$2/$3`, where `host` is the host where you run Draupnir, and `port` is the port you configured in `production.yaml`. For an example nginx configuration, see `test/nginx.conf`. It's the confirmation we use during runtime testing.
 
 ### Security note
 
 This mechanism can extract some information from **unencrypted** rooms. We have
 taken precautions to ensure that this cannot be abused: the only case in which
-this feature will publish information from room *foo* is:
+this feature will publish information from room _foo_ is:
 
-1. If it is used by a member of room *foo*; AND
+1. If it is used by a member of room _foo_; AND
 2. If said member did witness the event; AND
 3. If the event was unencrypted; AND
 4. If the event was not redacted/removed/...
@@ -118,6 +118,7 @@ $ mx-tester up
 ```
 
 Once you have called `mx-tester up` you can run the integration tests.
+
 ```
 $ yarn test:integration
 ```

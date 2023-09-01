@@ -9,8 +9,8 @@ import { ArgumentStream, ParameterDescription } from "./ParameterParsing";
 import { CommandResult } from "./Validation";
 
 export interface PromptOptions<PresentationType = any> {
-    readonly suggestions: PresentationType[]
-    readonly default?: PresentationType
+    readonly suggestions: PresentationType[];
+    readonly default?: PresentationType;
 }
 
 /**
@@ -18,12 +18,15 @@ export interface PromptOptions<PresentationType = any> {
  * to derive the prompt, or use the prompt given by the ParameterDescription.
  */
 export interface InterfaceAcceptor<PresentationType = any> {
-    readonly isPromptable: boolean
-    promptForAccept(parameter: ParameterDescription, invocationRecord: CommandInvocationRecord): Promise<CommandResult<PresentationType>>
+    readonly isPromptable: boolean;
+    promptForAccept(
+        parameter: ParameterDescription,
+        invocationRecord: CommandInvocationRecord,
+    ): Promise<CommandResult<PresentationType>>;
 }
 
 export interface CommandInvocationRecord {
-    readonly command: InterfaceCommand<BaseFunction>,
+    readonly command: InterfaceCommand<BaseFunction>;
 }
 
 export class PromptableArgumentStream extends ArgumentStream {
@@ -40,13 +43,15 @@ export class PromptableArgumentStream extends ArgumentStream {
     }
 
     public isPromptable(): boolean {
-        return this.interfaceAcceptor.isPromptable
+        return this.interfaceAcceptor.isPromptable;
     }
 
-    public async prompt<T = ReadItem>(parameterDescription: ParameterDescription): Promise<CommandResult<T>> {
+    public async prompt<T = ReadItem>(
+        parameterDescription: ParameterDescription,
+    ): Promise<CommandResult<T>> {
         const result = await this.interfaceAcceptor.promptForAccept(
             parameterDescription,
-            this.invocationRecord
+            this.invocationRecord,
         );
         if (result.isOk()) {
             this.source.push(result.ok);

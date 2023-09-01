@@ -27,11 +27,19 @@ limitations under the License.
 
 import { LogLevel, LogService } from "matrix-bot-sdk";
 import { Mjolnir } from "../Mjolnir";
-import { MatrixDataManager, RawSchemedData, SCHEMA_VERSION_KEY } from "./MatrixDataManager";
+import {
+    MatrixDataManager,
+    RawSchemedData,
+    SCHEMA_VERSION_KEY,
+} from "./MatrixDataManager";
 import { MatrixRoomReference } from "../commands/interface-manager/MatrixRoomReference";
-import { PolicyList, WATCHED_LISTS_EVENT_TYPE, WARN_UNPROTECTED_ROOM_EVENT_PREFIX } from "./PolicyList";
+import {
+    PolicyList,
+    WATCHED_LISTS_EVENT_TYPE,
+    WARN_UNPROTECTED_ROOM_EVENT_PREFIX,
+} from "./PolicyList";
 
-type WatchedListsEvent = RawSchemedData & { references?: string[]; };
+type WatchedListsEvent = RawSchemedData & { references?: string[] };
 /**
  * Manages the policy lists that a Mjolnir watches
  */
@@ -51,7 +59,9 @@ export class PolicyListManager extends MatrixDataManager<WatchedListsEvent> {
     }
 
     public resolveListShortcode(listShortcode: string): PolicyList | undefined {
-        return this.lists.find(list => list.listShortcode.toLocaleLowerCase() === listShortcode);
+        return this.lists.find(
+            (list) => list.listShortcode.toLocaleLowerCase() === listShortcode,
+        );
     }
 
     /**
@@ -59,7 +69,10 @@ export class PolicyListManager extends MatrixDataManager<WatchedListsEvent> {
      * @param roomId The room id for the `PolicyList`.
      * @param roomRef A reference (matrix.to URL) for the `PolicyList`.
      */
-    private async addPolicyList(roomId: string, roomRef: string): Promise<PolicyList> {
+    private async addPolicyList(
+        roomId: string,
+        roomRef: string,
+    ): Promise<PolicyList> {
         const list = new PolicyList(roomId, roomRef, this.mjolnir.client);
         this.mjolnir.ruleServer?.watch(list);
         await list.updateList();
@@ -76,9 +89,13 @@ export class PolicyListManager extends MatrixDataManager<WatchedListsEvent> {
      * @returns The list that has been watched or null if the manager was already
      * watching the list.
      */
-    public async watchList(roomRef: MatrixRoomReference): Promise<PolicyList | null> {
+    public async watchList(
+        roomRef: MatrixRoomReference,
+    ): Promise<PolicyList | null> {
         const roomId = await roomRef.joinClient(this.mjolnir.client);
-        if (this.policyLists.find(b => b.roomId === roomId.toRoomIdOrAlias())) {
+        if (
+            this.policyLists.find((b) => b.roomId === roomId.toRoomIdOrAlias())
+        ) {
             // This room was already in our list of policy rooms, nothing else to do.
             // Note that we bailout *after* the call to `joinRoom`, in case a user
             // calls `watchList` in an attempt to repair something that was broken,
@@ -87,7 +104,10 @@ export class PolicyListManager extends MatrixDataManager<WatchedListsEvent> {
             return null;
         }
 
-        const list = await this.addPolicyList(roomId.toRoomIdOrAlias(), roomId.toPermalink());
+        const list = await this.addPolicyList(
+            roomId.toRoomIdOrAlias(),
+            roomId.toPermalink(),
+        );
 
         await this.storeMatixData();
         await this.warnAboutUnprotectedPolicyListRoom(roomId.toRoomIdOrAlias());
@@ -99,9 +119,14 @@ export class PolicyListManager extends MatrixDataManager<WatchedListsEvent> {
      * @param roomRef A matrix room reference to a list that should be unwatched.
      * @returns The list being unwatched or null if we were not watching the list.
      */
-    public async unwatchList(roomRef: MatrixRoomReference): Promise<PolicyList | null> {
+    public async unwatchList(
+        roomRef: MatrixRoomReference,
+    ): Promise<PolicyList | null> {
         const roomId = await roomRef.resolve(this.mjolnir.client);
-        const list = this.policyLists.find(b => b.roomId === roomId.toRoomIdOrAlias()) || null;
+        const list =
+            this.policyLists.find(
+                (b) => b.roomId === roomId.toRoomIdOrAlias(),
+            ) || null;
         if (list) {
             this.policyLists.splice(this.policyLists.indexOf(list), 1);
             this.mjolnir.ruleServer?.unwatch(list);
@@ -118,10 +143,16 @@ export class PolicyListManager extends MatrixDataManager<WatchedListsEvent> {
 
     protected async requestMatrixData(): Promise<unknown> {
         try {
-            return await this.mjolnir.client.getAccountData(WATCHED_LISTS_EVENT_TYPE);
+            return await this.mjolnir.client.getAccountData(
+                WATCHED_LISTS_EVENT_TYPE,
+            );
         } catch (e) {
             if (e.statusCode === 404) {
-                LogService.warn('PolicyListManager', "Couldn't find account data for Mjolnir's watched lists, assuming first start.", e);
+                LogService.warn(
+                    "PolicyListManager",
+                    "Couldn't find account data for Mjolnir's watched lists, assuming first start.",
+                    e,
+                );
                 return this.createFirstData();
             } else {
                 throw e;
@@ -137,17 +168,29 @@ export class PolicyListManager extends MatrixDataManager<WatchedListsEvent> {
         const watchedListsEvent = await super.loadData();
 
         await Promise.all(
-            (watchedListsEvent?.references || []).map(async (roomRef: string) => {
-                const roomReference = await MatrixRoomReference.fromPermalink(roomRef).joinClient(this.mjolnir.client)
-                    .catch(ex => {
-                        LogService.error("PolicyListManager", "Failed to load watched lists for this mjolnir", ex);
-                        return Promise.reject(ex);
-                    }
+            (watchedListsEvent?.references || []).map(
+                async (roomRef: string) => {
+                    const roomReference =
+                        await MatrixRoomReference.fromPermalink(roomRef)
+                            .joinClient(this.mjolnir.client)
+                            .catch((ex) => {
+                                LogService.error(
+                                    "PolicyListManager",
+                                    "Failed to load watched lists for this mjolnir",
+                                    ex,
+                                );
+                                return Promise.reject(ex);
+                            });
+                    await this.warnAboutUnprotectedPolicyListRoom(
+                        roomReference.toRoomIdOrAlias(),
                     );
-                await this.warnAboutUnprotectedPolicyListRoom(roomReference.toRoomIdOrAlias());
-                // TODO, FIXME: fix this so that it stores room references and not this utter junk.
-                await this.addPolicyList(roomReference.toRoomIdOrAlias(), roomReference.toPermalink());
-            })
+                    // TODO, FIXME: fix this so that it stores room references and not this utter junk.
+                    await this.addPolicyList(
+                        roomReference.toRoomIdOrAlias(),
+                        roomReference.toPermalink(),
+                    );
+                },
+            ),
         );
     }
 
@@ -155,7 +198,7 @@ export class PolicyListManager extends MatrixDataManager<WatchedListsEvent> {
      * Store to account the list of policy rooms.
      */
     protected async storeMatixData() {
-        let list = this.policyLists.map(b => b.roomRef);
+        let list = this.policyLists.map((b) => b.roomRef);
         await this.mjolnir.client.setAccountData(WATCHED_LISTS_EVENT_TYPE, {
             references: list,
         });
@@ -180,7 +223,10 @@ export class PolicyListManager extends MatrixDataManager<WatchedListsEvent> {
         }
 
         try {
-            const accountData: { warned: boolean; } | null = await this.mjolnir.client.getAccountData(WARN_UNPROTECTED_ROOM_EVENT_PREFIX + roomId);
+            const accountData: { warned: boolean } | null =
+                await this.mjolnir.client.getAccountData(
+                    WARN_UNPROTECTED_ROOM_EVENT_PREFIX + roomId,
+                );
             if (accountData && accountData.warned) {
                 return; // already warned
             }
@@ -188,7 +234,15 @@ export class PolicyListManager extends MatrixDataManager<WatchedListsEvent> {
             // Expect that we haven't warned yet.
         }
 
-        await this.mjolnir.managementRoomOutput.logMessage(LogLevel.WARN, "Mjolnir", `Not protecting ${roomId} - it is a ban list that this bot did not create. Add the room as protected if it is supposed to be protected. This warning will not appear again.`, roomId);
-        await this.mjolnir.client.setAccountData(WARN_UNPROTECTED_ROOM_EVENT_PREFIX + roomId, { warned: true });
+        await this.mjolnir.managementRoomOutput.logMessage(
+            LogLevel.WARN,
+            "Mjolnir",
+            `Not protecting ${roomId} - it is a ban list that this bot did not create. Add the room as protected if it is supposed to be protected. This warning will not appear again.`,
+            roomId,
+        );
+        await this.mjolnir.client.setAccountData(
+            WARN_UNPROTECTED_ROOM_EVENT_PREFIX + roomId,
+            { warned: true },
+        );
     }
 }

@@ -28,6 +28,10 @@ limitations under the License.
 import { Mjolnir } from "../Mjolnir";
 
 // !mjolnir sync
-export async function execSyncCommand(roomId: string, event: any, mjolnir: Mjolnir) {
+export async function execSyncCommand(
+    roomId: string,
+    event: any,
+    mjolnir: Mjolnir,
+) {
     return mjolnir.protectedRoomsTracker.syncLists();
 }

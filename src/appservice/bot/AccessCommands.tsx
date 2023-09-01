@@ -3,8 +3,15 @@
  * All rights reserved.
  */
 
-import { defineInterfaceCommand, findTableCommand } from "../../commands/interface-manager/InterfaceCommand";
-import { findPresentationType, parameters, ParsedKeywords } from "../../commands/interface-manager/ParameterParsing";
+import {
+    defineInterfaceCommand,
+    findTableCommand,
+} from "../../commands/interface-manager/InterfaceCommand";
+import {
+    findPresentationType,
+    parameters,
+    ParsedKeywords,
+} from "../../commands/interface-manager/ParameterParsing";
 import { CommandResult } from "../../commands/interface-manager/Validation";
 import { AppserviceContext } from "./AppserviceCommandHandler";
 import { UserID } from "matrix-bot-sdk";
@@ -16,16 +23,21 @@ defineInterfaceCommand({
     table: "appservice bot",
     parameters: parameters([
         {
-            name: 'user',
-            acceptor: findPresentationType('UserID'),
-        }
+            name: "user",
+            acceptor: findPresentationType("UserID"),
+        },
     ]),
-    command: async function (this: AppserviceContext, _keywords: ParsedKeywords, user: UserID): Promise<CommandResult<void>> {
+    command: async function (
+        this: AppserviceContext,
+        _keywords: ParsedKeywords,
+        user: UserID,
+    ): Promise<CommandResult<void>> {
         await this.appservice.accessControl.allow(user.toString());
         return CommandResult.Ok(undefined);
     },
-    summary: "Allow a user to provision themselves a draupnir using the appservice."
-})
+    summary:
+        "Allow a user to provision themselves a draupnir using the appservice.",
+});
 
 defineMatrixInterfaceAdaptor({
     interfaceCommand: findTableCommand("appservice bot", "allow"),
@@ -37,16 +49,21 @@ defineInterfaceCommand({
     table: "appservice bot",
     parameters: parameters([
         {
-            name: 'user',
-            acceptor: findPresentationType('UserID'),
-        }
+            name: "user",
+            acceptor: findPresentationType("UserID"),
+        },
     ]),
-    command: async function (this: AppserviceContext, _keywords: ParsedKeywords, user: UserID): Promise<CommandResult<void>> {
+    command: async function (
+        this: AppserviceContext,
+        _keywords: ParsedKeywords,
+        user: UserID,
+    ): Promise<CommandResult<void>> {
         await this.appservice.accessControl.remove(user.toString());
         return CommandResult.Ok(undefined);
     },
-    summary: "Stop a user from using any provisioned draupnir in the appservice."
-})
+    summary:
+        "Stop a user from using any provisioned draupnir in the appservice.",
+});
 
 defineMatrixInterfaceAdaptor({
     interfaceCommand: findTableCommand("appservice bot", "remove"),

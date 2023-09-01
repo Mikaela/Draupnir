@@ -32,8 +32,20 @@ import { CommandError, CommandResult } from "./interface-manager/Validation";
 import { Mjolnir } from "../Mjolnir";
 import { RULE_ROOM, RULE_SERVER, RULE_USER } from "../models/ListRule";
 import PolicyList from "../models/PolicyList";
-import { defineInterfaceCommand, findTableCommand } from "./interface-manager/InterfaceCommand";
-import { findPresentationType, makePresentationType, ParameterDescription, parameters, ParsedKeywords, RestDescription, simpleTypeValidator, union } from "./interface-manager/ParameterParsing";
+import {
+    defineInterfaceCommand,
+    findTableCommand,
+} from "./interface-manager/InterfaceCommand";
+import {
+    findPresentationType,
+    makePresentationType,
+    ParameterDescription,
+    parameters,
+    ParsedKeywords,
+    RestDescription,
+    simpleTypeValidator,
+    union,
+} from "./interface-manager/ParameterParsing";
 import "./interface-manager/MatrixPresentations";
 import { defineMatrixInterfaceAdaptor } from "./interface-manager/MatrixInterfaceAdaptor";
 import { tickCrossRenderer } from "./interface-manager/MatrixHelpRenderer";
@@ -44,19 +56,33 @@ import { JSXFactory } from "./interface-manager/JSXFactory";
 
 makePresentationType({
     name: "PolicyList",
-    validator: simpleTypeValidator("PolicyList", (readItem: unknown) => readItem instanceof PolicyList)
-})
+    validator: simpleTypeValidator(
+        "PolicyList",
+        (readItem: unknown) => readItem instanceof PolicyList,
+    ),
+});
 
-definePresentationRenderer(findPresentationType("PolicyList"), function(list: PolicyList): DocumentNode {
-    return <p>
-        {list.listShortcode} <a href={list.roomRef}>{list.roomId}</a>
-    </p>
-})
+definePresentationRenderer(
+    findPresentationType("PolicyList"),
+    function (list: PolicyList): DocumentNode {
+        return (
+            <p>
+                {list.listShortcode} <a href={list.roomRef}>{list.roomId}</a>
+            </p>
+        );
+    },
+);
 
-
-export async function findPolicyListFromRoomReference(mjolnir: Mjolnir, policyListReference: MatrixRoomReference): Promise<CommandResult<PolicyList, CommandError>> {
-    const policyListRoomId = (await policyListReference.resolve(mjolnir.client)).toRoomIdOrAlias();
-    const policyList = mjolnir.policyListManager.lists.find(list => list.roomId === policyListRoomId);
+export async function findPolicyListFromRoomReference(
+    mjolnir: Mjolnir,
+    policyListReference: MatrixRoomReference,
+): Promise<CommandResult<PolicyList, CommandError>> {
+    const policyListRoomId = (
+        await policyListReference.resolve(mjolnir.client)
+    ).toRoomIdOrAlias();
+    const policyList = mjolnir.policyListManager.lists.find(
+        (list) => list.roomId === policyListRoomId,
+    );
     if (policyList !== undefined) {
         return CommandResult.Ok(policyList);
     } else {
@@ -66,89 +92,109 @@ export async function findPolicyListFromRoomReference(mjolnir: Mjolnir, policyLi
         // one of which can only be made by a factory which watches them via sync
         // and makes sure mjolnir is joined.
         // This refactor would be important for previewing lists regardless.
-        return CommandError.Result(`There is no policy list that Mjolnir is watching for ${policyListReference.toPermalink()}`);
+        return CommandError.Result(
+            `There is no policy list that Mjolnir is watching for ${policyListReference.toPermalink()}`,
+        );
     }
 }
 
-export async function findPolicyListFromShortcode(mjolnir: Mjolnir, designator: string): Promise<CommandResult<PolicyList, CommandError>> {
+export async function findPolicyListFromShortcode(
+    mjolnir: Mjolnir,
+    designator: string,
+): Promise<CommandResult<PolicyList, CommandError>> {
     const list = mjolnir.policyListManager.resolveListShortcode(designator);
     if (list !== undefined) {
         return CommandResult.Ok(list);
     } else {
-        return CommandError.Result(`There is no policy list with the shortcode ${designator} and a default list couldn't be found`);
+        return CommandError.Result(
+            `There is no policy list with the shortcode ${designator} and a default list couldn't be found`,
+        );
     }
 }
 
 async function ban(
     this: MjolnirContext,
     _keywords: ParsedKeywords,
-    entity: UserID|MatrixRoomReference|string,
-    policyListReference: MatrixRoomReference|string|PolicyList,
+    entity: UserID | MatrixRoomReference | string,
+    policyListReference: MatrixRoomReference | string | PolicyList,
     ...reasonParts: string[]
-    ): Promise<CommandResult<any, CommandError>> {
-        // first step is to resolve the policy list
-        const policyListResult = typeof policyListReference === 'string'
-            ? await findPolicyListFromShortcode(this.mjolnir, policyListReference)
+): Promise<CommandResult<any, CommandError>> {
+    // first step is to resolve the policy list
+    const policyListResult =
+        typeof policyListReference === "string"
+            ? await findPolicyListFromShortcode(
+                  this.mjolnir,
+                  policyListReference,
+              )
             : policyListReference instanceof PolicyList
             ? CommandResult.Ok(policyListReference)
-            : await findPolicyListFromRoomReference(this.mjolnir, policyListReference);
-        if (policyListResult.isErr()) {
-            return policyListResult;
-        }
-        const policyList = policyListResult.ok;
-
-        const reason = reasonParts.join(' ');
-
-        if (entity instanceof UserID) {
-            await policyList.banEntity(RULE_USER, entity.toString(), reason);
-        } else if (entity instanceof MatrixRoomReference) {
-            await policyList.banEntity(RULE_ROOM, entity.toRoomIdOrAlias(), reason);
-        } else {
-            await policyList.banEntity(RULE_SERVER, entity, reason);
-        }
-        return CommandResult.Ok(undefined);
+            : await findPolicyListFromRoomReference(
+                  this.mjolnir,
+                  policyListReference,
+              );
+    if (policyListResult.isErr()) {
+        return policyListResult;
     }
+    const policyList = policyListResult.ok;
+
+    const reason = reasonParts.join(" ");
+
+    if (entity instanceof UserID) {
+        await policyList.banEntity(RULE_USER, entity.toString(), reason);
+    } else if (entity instanceof MatrixRoomReference) {
+        await policyList.banEntity(RULE_ROOM, entity.toRoomIdOrAlias(), reason);
+    } else {
+        await policyList.banEntity(RULE_SERVER, entity, reason);
+    }
+    return CommandResult.Ok(undefined);
+}
 
 defineInterfaceCommand({
     designator: ["ban"],
     table: "mjolnir",
-    parameters: parameters([
-        {
-            name: "entity",
-            acceptor: union(
-                findPresentationType("UserID"),
-                findPresentationType("MatrixRoomReference"),
-                findPresentationType("string")
-            )
-        },
-        {
-            name: "list",
-            acceptor: union(
-                findPresentationType("MatrixRoomReference"),
-                findPresentationType("string"),
-                findPresentationType("PolicyList"),
-            ),
-            prompt: async function (this: MjolnirContext, parameter: ParameterDescription): Promise<PromptOptions> {
+    parameters: parameters(
+        [
+            {
+                name: "entity",
+                acceptor: union(
+                    findPresentationType("UserID"),
+                    findPresentationType("MatrixRoomReference"),
+                    findPresentationType("string"),
+                ),
+            },
+            {
+                name: "list",
+                acceptor: union(
+                    findPresentationType("MatrixRoomReference"),
+                    findPresentationType("string"),
+                    findPresentationType("PolicyList"),
+                ),
+                prompt: async function (
+                    this: MjolnirContext,
+                    parameter: ParameterDescription,
+                ): Promise<PromptOptions> {
+                    return {
+                        suggestions: this.mjolnir.policyListManager.lists,
+                    };
+                },
+            },
+        ],
+        new RestDescription<MjolnirContext>(
+            "reason",
+            findPresentationType("string"),
+            async function (_parameter) {
                 return {
-                    suggestions: this.mjolnir.policyListManager.lists
+                    suggestions:
+                        this.mjolnir.config.commands.ban.defaultReasons,
                 };
-            }
-        },
-    ],
-    new RestDescription<MjolnirContext>(
-        "reason",
-        findPresentationType("string"),
-        async function(_parameter) {
-            return {
-                suggestions: this.mjolnir.config.commands.ban.defaultReasons
-            }
-        }),
+            },
+        ),
     ),
     command: ban,
-    summary: "Bans an entity from the policy list."
-})
+    summary: "Bans an entity from the policy list.",
+});
 
 defineMatrixInterfaceAdaptor({
     interfaceCommand: findTableCommand("mjolnir", "ban"),
-    renderer: tickCrossRenderer
-})
+    renderer: tickCrossRenderer,
+});
