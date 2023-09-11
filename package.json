@@ -60,7 +60,7 @@
     "matrix-appservice-bridge": "^9.0.1",
     "parse-duration": "^1.0.2",
     "pg": "^8.8.0",
-    "shell-quote": "^1.7.3",
+    "shell-quote": "^1.8.1",
     "ulidx": "^0.3.0",
     "yaml": "^2.2.2"
   },
