@@ -1,3 +1,23 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Contributing to Draupnir](#contributing-to-draupnir)
+  - [Welcome](#welcome)
+  - [Getting Started](#getting-started)
+    - [Issue](#issue)
+    - [Fixing or implementing an existing issue](#fixing-or-implementing-an-existing-issue)
+  - [Where to start](#where-to-start)
+    - [How Draupnir works](#how-draupnir-works)
+    - [Code](#code)
+    - [Issues & Triaging](#issues--triaging)
+    - [Documentation](#documentation)
+  - [Making Pull Requests](#making-pull-requests)
+  - [Sign off](#sign-off)
+  - [Conclusion](#conclusion)
+  - [Further notes on license and its relation to business in general](#further-notes-on-license-and-its-relation-to-business-in-general)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Contributing to Draupnir
 
 ## Welcome

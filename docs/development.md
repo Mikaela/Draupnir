@@ -1,3 +1,10 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Developing Draupnir](#developing-draupnir)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Developing Draupnir
 
 This document is a part of our [contributing documentation](../CONTRIBUTING.md),

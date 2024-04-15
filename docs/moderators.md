@@ -1,3 +1,17 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Moderator's guide to Draupnir (bot edition)](#moderators-guide-to-draupnir-bot-edition)
+  - [Quick usage](#quick-usage)
+  - [How Draupnir works](#how-draupnir-works)
+  - [List management](#list-management)
+  - [Bans](#bans)
+  - [Redactions](#redactions)
+  - [Management](#management)
+  - [Trusted Reporters](#trusted-reporters)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Moderator's guide to Draupnir (bot edition)
 
 Moderating a community shouldn't be difficult - Draupnir gives you the tools to make moderation simple and

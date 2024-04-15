@@ -1,3 +1,19 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Draupnir](#draupnir)
+  - [Features](#features)
+    - [Differences from Mjolnir](#differences-from-mjolnir)
+  - [Status](#status)
+    - [Migration](#migration)
+  - [Setting up](#setting-up)
+  - [Quickstart guide](#quickstart-guide)
+  - [Enabling readable abuse reports](#enabling-readable-abuse-reports)
+    - [Security note](#security-note)
+  - [Contributing & Opening Issues](#contributing--opening-issues)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Draupnir
 
 A [Matrix](https://matrix.org) moderation bot.

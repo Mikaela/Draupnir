@@ -1,3 +1,12 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Prerequisites](#prerequisites)
+- [Docker Run](#docker-run)
+- [Docker Compose](#docker-compose)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 Draupnir is available on the Docker Hub as [`gnuxie/draupnir`](https://hub.docker.com/r/gnuxie/draupnir).
 
 Using docker, draupnir can be setup and ran in either of two ways;

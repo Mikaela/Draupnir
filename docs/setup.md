@@ -1,3 +1,13 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Setting up Draupnir](#setting-up-draupnir)
+  - [Secret Management](#secret-management)
+  - [Installation](#installation)
+  - [Post-install](#post-install)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Setting up Draupnir
 
 It is recommended to use [Pantalaimon](https://github.com/matrix-org/pantalaimon) so your management

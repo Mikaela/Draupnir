@@ -1,3 +1,14 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Code style](#code-style)
+  - [Code style: optimisation](#code-style-optimisation)
+  - [Code style: scope](#code-style-scope)
+  - [Code style: `const`](#code-style-const)
+    - [Why we do this?](#why-we-do-this)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Code style
 
 For now we don't have many objective code recommendations.

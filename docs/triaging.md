@@ -1,3 +1,15 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Triaging issues](#triaging-issues)
+  - [The purpose of triaging](#the-purpose-of-triaging)
+  - [Labels](#labels)
+    - [Likelihood](#likelihood)
+    - [Annoyance](#annoyance)
+    - [Impact](#impact)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Triaging issues
 
 The issue triaging process was developed in this [blog post](https://marewolf.me/posts/draupnir/2401.html#triaging)

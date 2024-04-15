@@ -1,3 +1,19 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Developing Draupnir - tests, tools, and environment](#developing-draupnir---tests-tools-and-environment)
+  - [matrix-protection-suite](#matrix-protection-suite)
+    - [VSCode](#vscode)
+  - [mx-tester](#mx-tester)
+    - [Usage](#usage)
+    - [Development and testing with mx-tester](#development-and-testing-with-mx-tester)
+  - [Debugging](#debugging)
+    - [Debugging and reproducing an issue](#debugging-and-reproducing-an-issue)
+    - [Running integration tests](#running-integration-tests)
+    - [Debugging an integration test](#debugging-an-integration-test)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Developing Draupnir - tests, tools, and environment
 
 This document is a part of our [contributing documentation](../CONTRIBUTING.md)

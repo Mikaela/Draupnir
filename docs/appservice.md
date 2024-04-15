@@ -1,3 +1,12 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+- [Post Install Setup and Configuration.](#post-install-setup-and-configuration)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 Draupnir can be run as an appservice, allowing users you trust or on your homeserver to run their own Draupnir without hosting anything themselves.
 This module is currently alpha quality and is subject to rapid changes,
 it is not recommended currently and support will be limited.

@@ -1,3 +1,18 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Context for developing Draupnir](#context-for-developing-draupnir)
+  - [The synchronisation loop](#the-synchronisation-loop)
+    - [Maintaining state](#maintaining-state)
+  - [Policy Lists](#policy-lists)
+    - [State events](#state-events)
+    - [Policies](#policies)
+  - [The ban command](#the-ban-command)
+  - [Policy application in Draupnir](#policy-application-in-draupnir)
+  - [A history of moderation projects](#a-history-of-moderation-projects)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Context for developing Draupnir
 
 alternatively context that is essential for developing
